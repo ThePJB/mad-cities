@@ -15,17 +15,12 @@ prebuilt highways might be spicy
 
 ---------------------
 
-Sooooooooooo
+actual roads: isolines
 
-it looks like the library sorts the points by y value.
-When you pick they are sorted by y value.
-But adjacency seems to use 
+money: per faction
 
+todo dict, sometimes doesnt find key after resizing, am i zeroing properly etc
 
-maybe its the difference between get locaiton and look up vs get position straight off it
-ask: what are ur neighbours X? retarded
-ask: are u a neighbour of X? ok
-
-maybe retardation just cancels out
-
-anyway still if I sort points by Y will that fix it. maybe just do that and move on with my life
+----
+really get bucket is the main dict function, its an lvalue as well, and it might be empty or might not be
+need to communicate that as well as the ptr because u want the ptr as lvalue still

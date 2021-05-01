@@ -6,6 +6,7 @@
 
 #include "danklib/vla.hpp"
 #include "danklib/rng.hpp"
+#include "danklib/dict.hpp"
 
 #define JC_VORONOI_IMPLEMENTATION
 #include "lib/voronoi/src/jc_voronoi.h"
@@ -246,11 +247,13 @@ struct world {
             const auto neighbour_site = get_neighbour_site(i, hash_intn(rng, 0, get_num_neighbours(i) - 1));
             if (!neighbour_site) return; // map boundaries might not have
             // also check not preexisting road. or could increase road goodness
+            const auto i1 = i;
+            const auto i2 = neighbour_site->index;
             const auto p1 = point(get_site(i)->p.x, get_site(i)->p.y);
             const auto p2 = point(neighbour_site->p.x, neighbour_site->p.y);
             
             const auto cost = road_cost(p1, p2);
-            if (cost < get_money(i)) {
+            if (cost < get_money(i) && !roads.contains(road_segment(i1, i2)) && !roads.contains(road_segment(i1, i2))) {
                 // actually make road
                 set_money(i, get_money(i) - cost);
                 roads.push(road_segment(i, neighbour_site->index));

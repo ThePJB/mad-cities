@@ -4,6 +4,9 @@
 #include <functional>
 #include <stdio.h>
 
+// todo cull some of the stupid things i put in here lol
+// maybe iterators, just begin() and end() ptrs
+
 template<typename T>
 struct vla {
     const static int default_backing_size = 10;
@@ -146,6 +149,13 @@ struct vla {
         }
         return dest_vla;
     }
-};
 
-// add sort with cmpfn
+    bool contains(T thing) {
+        for (int i = 0; i < length; i++) {
+            if (!memcmp(&items[i], &thing, sizeof(T))) {
+                return true;
+            }
+        }
+        return false;
+    }
+};
