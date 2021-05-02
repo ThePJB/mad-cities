@@ -9,7 +9,7 @@
 #include "danklib/dict.hpp"
 
 #define JC_VORONOI_IMPLEMENTATION
-#include "lib/voronoi/src/jc_voronoi.h"
+#include "lib/jc_voronoi.h"
 
 #include "colour.hpp"
 
@@ -17,6 +17,19 @@
 #define len(X) (sizeof(X)/sizeof(X[0]))
 
 int chosen_one = 0;
+
+struct region {
+    int voronoi_idx;
+    int faction_idx;
+    int num_neighbours;
+}
+
+struct faction {
+    uint32_t id;
+    hsv colour;
+    float money;
+    vla<int> owned_regions;
+}
 
 struct point {
     float x;

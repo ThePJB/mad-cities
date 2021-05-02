@@ -24,3 +24,14 @@ todo dict, sometimes doesnt find key after resizing, am i zeroing properly etc
 ----
 really get bucket is the main dict function, its an lvalue as well, and it might be empty or might not be
 need to communicate that as well as the ptr because u want the ptr as lvalue still
+
+theyre a bit more bare metal, you could save extra hashes if you want i.e the faction thing is already hashed so just look it up without hashing again. bug prone? maybe lol. but it could matter if it was a really really tight loop, like the chunk logic in my voxelgame for instance
+----------------
+
+now why i added? right to have money be a per faction thing.
+oo i could draw a sorted list of dankest factions lool
+so yes faction ID
+
+i think i will also be updating per faction?
+well I could keep doing it per site but they would always be traversed in a certain order therefore money get spent in a certain order
+wait if i moved that out i didnt need hashmap, lol
