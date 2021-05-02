@@ -133,6 +133,21 @@ struct vla {
         return &items[iter_pos];
     }
 
+    void remove_idx(int idx) {
+        for (int i = idx; i < length; i++) {
+            items[i] = items[i+1];
+        }
+        length--;
+    }
+
+    void remove_item(T item) {
+        for (int i = 0; i < length; i++) {
+            if (items[i] == item) {
+                remove_idx(i);
+            }
+        }
+    }
+
     void sort(std::function<bool(T,T)> less) {
         for (int i = 0; i < length; i++) {
             for (int j = 0; j < length; j++) {

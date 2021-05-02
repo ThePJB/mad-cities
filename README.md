@@ -40,3 +40,8 @@ wait if i moved that out i didnt need hashmap, lol
 it doing it shit again lmao
 
 ok theres a pattern here, everyone is a neighbour of 0,1,2,3,4 etc
+
+
+------
+now enable them to buy each other
+within cells interlinked
