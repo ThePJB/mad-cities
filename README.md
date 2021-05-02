@@ -35,3 +35,8 @@ so yes faction ID
 i think i will also be updating per faction?
 well I could keep doing it per site but they would always be traversed in a certain order therefore money get spent in a certain order
 wait if i moved that out i didnt need hashmap, lol
+
+----------------
+it doing it shit again lmao
+
+ok theres a pattern here, everyone is a neighbour of 0,1,2,3,4 etc

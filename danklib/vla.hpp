@@ -120,6 +120,10 @@ struct vla {
         return &items[iter_pos];
     }
 
+    T *end() {
+        return &items[length];
+    }
+
     bool is_next() const {
         return iter_pos < length;
     }
