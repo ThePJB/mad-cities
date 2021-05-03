@@ -19,11 +19,7 @@
 #define len(X) (sizeof(X)/sizeof(X[0]))
 
 int chosen_one = 0;
-
-struct region {
-    int voronoi_idx;
-    int faction_idx;
-};
+const int faction_gaia = 99999989;
 
 struct faction {
     uint32_t id;
@@ -41,13 +37,57 @@ struct road_segment {
     }
 };
 
+enum biome {
+    BIOME_OCEAN,
+    BIOME_PLAINS,
+    BIOME_MOUNTAIN,
+    BIOME_BIG_MOUNTAIN,
+};
+
+biome get_biome(float x, float y) {
+    const auto r = point(x, y).dist(point(0.5, 0.5));
+    const auto height = (1.0 - 2*r) * 0.5 + 0.5 * hash_fbm2_4(8 * point(x,y), 98944);
+
+    if (height < 0.3) {
+        return BIOME_OCEAN;
+    } else if (height < 0.5) {
+        return BIOME_PLAINS;
+    } else if (height < 0.7) {
+        return BIOME_MOUNTAIN;
+    } else {
+        return BIOME_BIG_MOUNTAIN;
+    }
+}
+
+struct region {
+    int voronoi_idx;
+    int faction_key;
+    biome m_biome;
+
+    region(int idx, float x, float y) {
+        const auto b = get_biome(x, y);
+        if (b == BIOME_OCEAN || b == BIOME_BIG_MOUNTAIN) {
+            // no faction
+            faction_key = faction_gaia;
+        } else {
+            // new faction
+            faction_key = hash(idx);
+        }
+        voronoi_idx = idx;
+        m_biome = b;
+    }
+};
+
 float road_cost(point p1, point p2) {
     return 15*p1.dist(p2);
 }
 
+
 struct world {
     voronoi v;
-    vla<faction> factions = vla<faction>();
+    //vla<faction> factions = vla<faction>();
+    dict<faction> factions = dict<faction>();
+    
     vla<region> regions = vla<region>();
     vla<road_segment> roads = vla<road_segment>();
 
@@ -56,7 +96,7 @@ struct world {
     world() {
         uint32_t seed = 0;
         auto points = vla<jcv_point>();
-        const auto npoint = 100;
+        const auto npoint = 200;
         for (int i = 0; i < npoint; i++) {
             seed = hash(seed);
             float x = hash_floatn(seed, 0, 1);
@@ -72,22 +112,20 @@ struct world {
             const auto site = v.get_site(i);
             const jcv_graphedge* edge = site->edges;
 
-            regions.push((region) {
-                .voronoi_idx = i,
-                .faction_idx = i,
-            });
-
-            factions.push((faction){
-                .id = hash(i),
-                .colour = (hsv) {
-                    .h = hash_floatn(hash(i), 0, 360),
-                    .s = 0.5,
-                    .v = 0.9,
-                },
-                .money = 0,
-                .owned_regions = vla<int>(),
-            });
-            factions.items[factions.length-1].owned_regions.push(i);
+            regions.push(region(i, site->p.x, site->p.y));
+            if (regions.items[regions.length-1].faction_key != faction_gaia) {
+                factions.set(hash(i), (faction){
+                    .id = hash(i),
+                    .colour = (hsv) {
+                        .h = hash_floatn(hash(i), 0, 360),
+                        .s = 0.5,
+                        .v = 0.9,
+                    },
+                    .money = 0,
+                    .owned_regions = vla<int>(),
+                });
+                factions.get(hash(i))->owned_regions.push(i);
+            }
         }
 
         points.destroy();
@@ -96,25 +134,45 @@ struct world {
     void draw(SDL_Renderer *renderer, int xres, int yres) {
         for (int i = 0; i < v.num_sites(); i++) {
             const auto site = v.get_site(i);
-            const auto faction_idx = regions.items[site->index].faction_idx;
+            const auto faction_key = regions.items[site->index].faction_key;
+            
+            faction *f_ptr = NULL;
+            if (faction_key != faction_gaia) {
+                f_ptr = factions.get(faction_key);
+            };
+
+            rgb rgb = {1, 1, 1}; 
+            if (regions.items[i].m_biome == BIOME_PLAINS) {
+                rgb = hsv2rgb(f_ptr->colour);
+            } else if (regions.items[i].m_biome == BIOME_MOUNTAIN) {
+                auto mut_hsv = f_ptr->colour; 
+                mut_hsv.s *= 0.6;
+                //mut_hsv.v *= 1.2;
+                rgb = hsv2rgb(mut_hsv);
+            } else if (regions.items[i].m_biome == BIOME_OCEAN) {
+                rgb = {0, 0, 0.8};
+            } else if (regions.items[i].m_biome == BIOME_BIG_MOUNTAIN) {
+                rgb = {0.4, 0.4, 0.4};
+            } else {
+                rgb = {1, 0, 1};
+            }
+
+            // colour selected poly
+            if (i == chosen_one) {
+                rgb = {1, 0, 0};
+            }
+
+            // colour neighbours of selected poly
+            for (int j = 0; j < v.get_num_neighbours(i); j++) {
+                const auto nidx = v.get_neighbour_idx(i, j);
+                if (nidx == chosen_one) {
+                    rgb = {0, 1, 0};
+                    break;
+                }
+            }
+
             auto e = site->edges;
             while (e) {
-                // look up the colour of the faction of the site
-                auto rgb = hsv2rgb(factions.items[faction_idx].colour);
-
-                // colour selected poly
-                if (i == chosen_one) {
-                    rgb = {1, 0, 0};
-                }
-
-                // colour neighbours of selected poly
-                for (int j = 0; j < v.get_num_neighbours(i); j++) {
-                    const auto nidx = v.get_neighbour_idx(i, j);
-                    if (nidx == chosen_one) {
-                        rgb = {0, 1, 0};
-                        break;
-                    }
-                }
   
                 filledTrigonRGBA(renderer,
                     xres * site->p.x, yres * site->p.y, 
@@ -138,11 +196,12 @@ struct world {
 
     void update(double dt) {
         for (int i = 0; i < v.num_sites(); i++) {
-            const auto faction_idx = regions.items[i].faction_idx;
-            auto faction_ptr = &factions.items[faction_idx];
+            const auto faction_key = regions.items[i].faction_key;
+            if (faction_key == faction_gaia) continue;
+            faction *faction_ptr = factions.get(faction_key);
 
             // first make money
-            const auto money_rate = hash_floatn(faction_idx + 2312314, 0, 1);
+            const auto money_rate = hash_floatn(faction_key + 2312314, 0, 1);
             faction_ptr->money += money_rate*dt;
         
             // pick a random neighbour
@@ -150,15 +209,18 @@ struct world {
             const auto neighbour_idx = v.get_neighbour_idx(i, hash_intn(rng, 0, v.get_num_neighbours(i) - 1));
             
             // then consider just buying them
-            const auto other_faction = regions.items[neighbour_idx].faction_idx;
-            if (other_faction != faction_idx) {
+            const auto other_faction = regions.items[neighbour_idx].faction_key;
+            if (other_faction == faction_gaia) continue;
+            if (other_faction != faction_key) {
                 // price = ?? maybe amount of money
-                const auto price = 2 + factions.items[other_faction].money;
+                //const auto price = 2 + factions.items[other_faction].money;
+                const auto price = 10;
                 if (price < faction_ptr->money) {
-                    printf("faction %d buying region %d from %d\n", faction_idx, neighbour_idx, other_faction);
+                    printf("faction %d buying region %d from %d\n", faction_key, neighbour_idx, other_faction);
                     faction_ptr->money -= price;
-                    regions.items[neighbour_idx].faction_idx = faction_idx;
-                    factions.items[other_faction].owned_regions.remove_item(neighbour_idx);
+                    regions.items[neighbour_idx].faction_key = faction_key;
+
+                    faction_ptr->owned_regions.remove_item(neighbour_idx);
                     faction_ptr->owned_regions.push(neighbour_idx);
                 }
             }
@@ -221,6 +283,7 @@ int main(int argc, char** argv) {
                     const auto mouse_point = point(((float)e.button.x)/xres, ((float)e.button.y)/yres);
                     chosen_one = w.v.get_idx_containing_point(mouse_point);
                     printf("chosen one set to %d\n", chosen_one);
+                    printf("biome %d\n", w.regions.items[chosen_one].m_biome);
                 }
             }
         }

@@ -77,7 +77,6 @@ struct dict {
         // repopulate
         for (int i = 0; i < old_size; i++) {
             if (old_items[i].key != empty_bucket) {
-                printf("repopulate %d\n", old_items[i].item);
                 set(old_items[i].key, old_items[i].item);
             }
         }
@@ -99,13 +98,13 @@ struct dict {
         return get_bucket(key)->empty;
     }
 
-    T get(uint32_t key) {
+    T *get(uint32_t key) {
         const auto result = get_bucket(key);
         if (result.empty) {
-            printf("uh oh key error\n");
-            return T();
+            printf("uh oh key error with key %u\n", key);
+            return NULL;
         }
-        return result.ptr->item;
+        return &result.ptr->item;
     }
 
     void destroy() {

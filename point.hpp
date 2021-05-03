@@ -13,4 +13,20 @@ struct point {
     float dist(point p2) {
         return sqrtf((x - p2.x) * (x - p2.x) + (y - p2.y) * (y - p2.y));
     }
+
+    point operator+(const point& p) {
+        return point(x + p.x, y + p.y);
+    }
+
+    point operator*(const point& p) {
+        return point(x * p.x, y * p.y);
+    }
+
+    point operator*(float f) {
+        return point(x * f, y * f);
+    }
 };
+
+inline point operator*(float f, const point& p) {
+    return point(p.x * f, p.y * f);    
+}

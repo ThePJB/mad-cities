@@ -45,3 +45,27 @@ ok theres a pattern here, everyone is a neighbour of 0,1,2,3,4 etc
 ------
 now enable them to buy each other
 within cells interlinked
+
+
+some edges are not makign roads (on the edges), maybe its because length-1 or something
+
+biomes with properties re defensibility, productivity etc
+factions could have compatibility e.g. seafaring etc
+culture = adapting
+
+ah yes maybe some kind of increased upkeep with distance
+and that could vary with faction as well e.g. wide vs tall
+
+interesting mutating things as expressions like in rust, with a method chain. lets them be const
+and its just like this thing is this
+
+-----
+bug: holdout in top right corner lol
+
+----------
+todos
+so tax on getting big might be quite interesting
+roads: have there only be incentive to build to friends, and if built to friends then more income
+destroy roads to enemies
+
+make region income noise based instead of pure random
