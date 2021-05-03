@@ -29,6 +29,8 @@ struct dict {
     int backing_size;
     int amount;
 
+    int iter_pos = 0;
+
     const static int default_backing_size = 10;
     const float high_water_mark = 0.5;
 
@@ -112,5 +114,24 @@ struct dict {
             free(items);
             items = NULL;
         }
+    }
+
+    void iter_begin() {
+        iter_pos = 0;
+    }
+
+    bucket<T> *iter_next() {
+        if (iter_pos >= backing_size - 1) {
+            return NULL;
+        }
+
+        while (items[iter_pos].key == empty_bucket) {
+            iter_pos++;
+            if (iter_pos >= backing_size - 1) {
+                return NULL;
+            }
+        }
+        iter_pos++;
+        return &items[iter_pos-1];
     }
 };

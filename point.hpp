@@ -10,7 +10,7 @@ struct point {
         this->y = y;
     }
 
-    float dist(point p2) {
+    float dist(point p2) const {
         return sqrtf((x - p2.x) * (x - p2.x) + (y - p2.y) * (y - p2.y));
     }
 

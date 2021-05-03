@@ -21,11 +21,16 @@
 int chosen_one = 0;
 const int faction_gaia = 99999989;
 
+const auto num_points = 800;
+const auto upkeep_coefficient = 2.0;
+
+
 struct faction {
     uint32_t id;
     hsv colour;
     float money;
     vla<int> owned_regions;
+    int capital;
 };
 
 struct road_segment {
@@ -96,8 +101,7 @@ struct world {
     world() {
         uint32_t seed = 0;
         auto points = vla<jcv_point>();
-        const auto npoint = 200;
-        for (int i = 0; i < npoint; i++) {
+        for (int i = 0; i < num_points; i++) {
             seed = hash(seed);
             float x = hash_floatn(seed, 0, 1);
             float y = hash_floatn(seed * 323098, 0, 1);
@@ -123,6 +127,7 @@ struct world {
                     },
                     .money = 0,
                     .owned_regions = vla<int>(),
+                    .capital = i,
                 });
                 factions.get(hash(i))->owned_regions.push(i);
             }
@@ -184,13 +189,25 @@ struct world {
                     255);
                 e = e->next;
             }
+
         }
         // draw roads
         for (int i = 0; i < roads.length; i++) {
             const auto r = roads.items[i];
             const auto start = v.get_site(r.start_site)->p;
             const auto end = v.get_site(r.end_site)->p;
-            thickLineRGBA(renderer, start.x * xres, start.y * yres, end.x * xres, end.y * yres, 5, 0xCC, 0xAA, 0x55, 0xFF);
+            thickLineRGBA(renderer, start.x * xres, start.y * yres, end.x * xres, end.y * yres, 3, 0xCC, 0xAA, 0x55, 0xFF);
+        }
+
+        factions.iter_begin();
+        while (auto f = factions.iter_next()) {
+            auto capital = f->item.capital;
+            auto capital_faction = regions.items[capital].faction_key;
+            if (capital_faction == f->key) {
+                filledCircleRGBA(renderer, xres * v.get_site(capital)->p.x, yres * v.get_site(capital)->p.y, 3, 0, 0, 0, 255);
+            } else {
+                // faction with no capital lol
+            }
         }
     }
 
@@ -203,18 +220,28 @@ struct world {
             // first make money
             const auto money_rate = hash_floatn(faction_key + 2312314, 0, 1);
             faction_ptr->money += money_rate*dt;
+            const auto capital_site = v.get_site(faction_ptr->capital);
+            const auto capital_pt = point(capital_site->p.x, capital_site->p.y);
+            const auto this_site = v.get_site(i);
+            const auto this_pt = point(this_site->p.x, this_site->p.y);
+            const auto upkeep = upkeep_coefficient * this_pt.dist(capital_pt);
+            faction_ptr->money -= upkeep*dt;
         
             // pick a random neighbour
             rng = hash(rng);
             const auto neighbour_idx = v.get_neighbour_idx(i, hash_intn(rng, 0, v.get_num_neighbours(i) - 1));
             
             // then consider just buying them
-            const auto other_faction = regions.items[neighbour_idx].faction_key;
+            const auto other_region = &regions.items[neighbour_idx];
+            const auto other_faction = other_region->faction_key;
             if (other_faction == faction_gaia) continue;
             if (other_faction != faction_key) {
                 // price = ?? maybe amount of money
                 //const auto price = 2 + factions.items[other_faction].money;
-                const auto price = 10;
+                auto price = 10;
+                if (other_region->m_biome == BIOME_MOUNTAIN) {
+                    price = 50;
+                }
                 if (price < faction_ptr->money) {
                     printf("faction %d buying region %d from %d\n", faction_key, neighbour_idx, other_faction);
                     faction_ptr->money -= price;

@@ -69,3 +69,11 @@ roads: have there only be incentive to build to friends, and if built to friends
 destroy roads to enemies
 
 make region income noise based instead of pure random
+or even better discrete and obvious
+
+output goes to 0 after changing hands and ramps back up
+
+capital cities etc
+output is like population * base value maybe
+
+this is actually awesome. add names and introspection
