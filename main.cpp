@@ -7,6 +7,7 @@
 #include "danklib/vla.hpp"
 #include "danklib/rng.hpp"
 #include "danklib/dict.hpp"
+#include "rendercontext.hpp"
 
 #define JC_VORONOI_IMPLEMENTATION
 #include "lib/jc_voronoi.h"
@@ -27,7 +28,7 @@ const auto upkeep_coefficient = 2.0;
 
 struct faction {
     uint32_t id;
-    hsv colour;
+    hsv colour = hsv(0,0,0);
     float money;
     vla<int> owned_regions;
     int capital;
@@ -51,7 +52,7 @@ enum biome {
 
 biome get_biome(float x, float y) {
     const auto r = point(x, y).dist(point(0.5, 0.5));
-    const auto height = (1.0 - 2*r) * 0.5 + 0.5 * hash_fbm2_4(8 * point(x,y), 98944);
+    const auto height = (1.0 - 2*r) * 0.0 + 1.0 * hash_fbm2_4(4 * point(x,y), 98944);
 
     if (height < 0.3) {
         return BIOME_OCEAN;
@@ -100,12 +101,12 @@ struct world {
     
     world() {
         uint32_t seed = 0;
-        auto points = vla<jcv_point>();
+        auto points = vla<point>();
         for (int i = 0; i < num_points; i++) {
             seed = hash(seed);
             float x = hash_floatn(seed, 0, 1);
             float y = hash_floatn(seed * 323098, 0, 1);
-            const jcv_point point = {x, y};
+            const point point = {x, y};
             points.push(point);
         }
         v = voronoi(points);
@@ -136,7 +137,7 @@ struct world {
         points.destroy();
     }
 
-    void draw(SDL_Renderer *renderer, int xres, int yres) {
+    void draw(render_context *rc) {
         for (int i = 0; i < v.num_sites(); i++) {
             const auto site = v.get_site(i);
             const auto faction_key = regions.items[site->index].faction_key;
@@ -178,15 +179,7 @@ struct world {
 
             auto e = site->edges;
             while (e) {
-  
-                filledTrigonRGBA(renderer,
-                    xres * site->p.x, yres * site->p.y, 
-                    xres * e->pos[0].x, yres * e->pos[0].y, 
-                    xres * e->pos[1].x, yres * e->pos[1].y,
-                    rgb.r * 255,
-                    rgb.g * 255,
-                    rgb.b * 255,
-                    255);
+                rc->draw_triangle(rgb, site->p, e->pos[0], e->pos[1]);
                 e = e->next;
             }
 
@@ -196,7 +189,7 @@ struct world {
             const auto r = roads.items[i];
             const auto start = v.get_site(r.start_site)->p;
             const auto end = v.get_site(r.end_site)->p;
-            thickLineRGBA(renderer, start.x * xres, start.y * yres, end.x * xres, end.y * yres, 3, 0xCC, 0xAA, 0x55, 0xFF);
+            rc->draw_line(rgb(0.7, 0.7, 0.4), start, end, 3);
         }
 
         factions.iter_begin();
@@ -204,7 +197,7 @@ struct world {
             auto capital = f->item.capital;
             auto capital_faction = regions.items[capital].faction_key;
             if (capital_faction == f->key) {
-                filledCircleRGBA(renderer, xres * v.get_site(capital)->p.x, yres * v.get_site(capital)->p.y, 3, 0, 0, 0, 255);
+                rc->draw_circle(rgb(0,0,0), v.get_site(capital)->p, 3);
             } else {
                 // faction with no capital lol
             }
@@ -279,8 +272,8 @@ int main(int argc, char** argv) {
 
     auto dt = 0.0;
 
-    const auto xres = 800;
-    const auto yres = 800;
+    const auto xres = 1600;
+    const auto yres = 900;
 
     const auto window = SDL_CreateWindow(
         "mad cities", 
@@ -296,6 +289,7 @@ int main(int argc, char** argv) {
     if (renderer == NULL) fatal("null renderer");
 
     auto w = world();
+    auto rc = render_context(renderer, 0, 0, 900, 900);
 
     auto keep_going = true;
     while (keep_going) {
@@ -319,7 +313,7 @@ int main(int argc, char** argv) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        w.draw(renderer, xres, yres);
+        w.draw(&rc);
         w.update(dt);
 
         SDL_RenderPresent(renderer);

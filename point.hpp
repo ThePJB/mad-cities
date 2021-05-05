@@ -5,6 +5,8 @@
 struct point {
     float x;
     float y;
+
+    point() {x = 0; y = 0; }
     point(float x, float y) {
         this->x = x;
         this->y = y;

@@ -12,7 +12,7 @@ struct voronoi {
     vla<int> num_neighbours = vla<int>();
 
     voronoi(){}; // lmao
-    voronoi(vla<jcv_point> points);
+    voronoi(vla<point> points);
     void compute_num_neighbours();
 
     int get_num_neighbours(int idx) {return num_neighbours.items[idx];};

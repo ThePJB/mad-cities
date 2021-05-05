@@ -77,3 +77,27 @@ capital cities etc
 output is like population * base value maybe
 
 this is actually awesome. add names and introspection
+
+---------
+how to do gui
+does it make sense to be like heres an object, use it to draw? and its got like the bounds etc
+snowkoban in theory would be like its another thing on the scene graph
+what about use dear imgui?
+
+1. swap to new rendering thing
+2. highlight enemy edges for clarity
+also r to re randomize?
+maybe get rid of roads or make useful
+more interesting world gen, what about just pure noise?
+distribute income with noise, or even better some cool discrete thing?
+or rollover borders
+flanking bonus for captures?
+
+one type to another type advantage? eg mountain bonus attacking down or mountain same to other mountain?
+fortifying points?
+civs could just have a tendency
+blunting attacks instead of just cant afford
+fuck areas that get repeatedly taken over, war-torn
+
+could have treaties, non constant
+factions themselves could have 'strength' to factor into conquest

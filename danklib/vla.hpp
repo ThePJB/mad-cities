@@ -143,7 +143,7 @@ struct vla {
     void remove_item(T item) {
         for (int i = 0; i < length; i++) {
             if (items[i] == item) {
-                remove_idx(i);
+                remove_idx(i);  
             }
         }
     }

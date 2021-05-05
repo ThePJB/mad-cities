@@ -3,7 +3,7 @@
 
 hsv rgb2hsv(rgb in)
 {
-    hsv         out;
+    hsv         out = hsv(0,0,0);
     double      min, max, delta;
 
     min = in.r < in.g ? in.r : in.g;
@@ -50,7 +50,7 @@ rgb hsv2rgb(hsv in)
 {
     double      hh, p, q, t, ff;
     long        i;
-    rgb         out;
+    rgb         out = rgb(0, 0, 0);
 
     if(in.s <= 0.0) {       // < is bogus, just shuts up warnings
         out.r = in.v;

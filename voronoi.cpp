@@ -33,8 +33,8 @@ int voronoi::get_neighbour_idx(int idx, int which_neighbour) {
     return -1;
 }
 
-voronoi::voronoi(vla<jcv_point> points) {
-    points.sort([](jcv_point p1, jcv_point p2){return p1.y < p2.y;});
+voronoi::voronoi(vla<point> points) {
+    points.sort([](point p1, point p2){return p1.y < p2.y;});
         jcv_rect r = {
         .min = {0, 0},
         .max = {1, 1},
@@ -46,11 +46,11 @@ voronoi::voronoi(vla<jcv_point> points) {
 }
 
 void voronoi::relax() {
-    auto new_points = vla<jcv_point>();
+    auto new_points = vla<point>();
     auto sites = jcv_diagram_get_sites(&diagram);
     for (int i = 0; i < diagram.numsites; i++) {
         const auto site = &sites[i];
-        jcv_point sum = site->p;
+        point sum = site->p;
         const jcv_graphedge* edge = site->edges;
 
         int count = 1;
@@ -68,7 +68,7 @@ void voronoi::relax() {
         .max = {1, 1},
     };
 
-    new_points.sort([](jcv_point p1, jcv_point p2){return p1.y < p2.y;});
+    new_points.sort([](point p1, point p2){return p1.y < p2.y;});
     memset(&diagram, 0, sizeof(jcv_diagram));
     jcv_diagram_generate(new_points.length, new_points.items, &r, NULL, &diagram);
     new_points.destroy();
