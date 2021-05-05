@@ -22,6 +22,7 @@ struct voronoi {
     const jcv_site *get_site(int idx);
     int num_sites() {return diagram.numsites;};
     int get_idx_containing_point(point p);
+    void destroy();
 };
 
 // im going to hide so much shit in here lol and then

@@ -1,3 +1,37 @@
+# Mad Cities
+press r to start again
+hold i to see per-region income
+
+## Todos
+ - get rid of chosen one and have rollover give informaiton about the faction instead
+ - faction income view
+ - try different income distributions
+ - name factions and capitals
+ - time warp
+ - make deterministic, remove dt or dt = 1/60 and also 60fps lock, time warp is 4 updates per frame
+ - maybe have n_factions != n_cells
+   - could have wild lands actually would be pretty cool
+ - add biome view as well
+ - cut off penalty?
+ - rivers, proper elevation, proper graphics could all be cool
+ - make roads go through center of shared edge
+ - speculative
+   - make roads do something, destroyed between rivals, not just a fully connected mesh etc
+   - try adding reasons to develop
+   - moving of capitals
+     - historical figure might move it
+   - alliances
+     - historical figures might forge them
+   - weaken regions when they get captured
+   - vary defense score
+   - differentiate factions - defensiveness, aggression, propensity to invest in different infrastructure, etc
+     - a historical figure might change factions numbers
+   - less noisy, more interesting: maybe chain reactions and stuff
+
+remember that the simpler the better
+
+
+
 ok so the plan is
  - simulation
    - have money builds over time
@@ -84,8 +118,6 @@ does it make sense to be like heres an object, use it to draw? and its got like 
 snowkoban in theory would be like its another thing on the scene graph
 what about use dear imgui?
 
-1. swap to new rendering thing
-2. highlight enemy edges for clarity
 also r to re randomize?
 maybe get rid of roads or make useful
 more interesting world gen, what about just pure noise?
@@ -101,3 +133,15 @@ fuck areas that get repeatedly taken over, war-torn
 
 could have treaties, non constant
 factions themselves could have 'strength' to factor into conquest
+
+also broke picking but also dont care. add pick to the rc thing
+
+more output for water adjacency or something if port is developed
+
+nonuniform distribution
+guess you could have a noise function for point_density and then go through and cull
+coastlines and stuff would be weird then
+
+
+can u realloc nullptr? it would be nice if u didnt have to initialize vlas or if destroying them meant they were good 2 go
+well i can also just add .clear methods

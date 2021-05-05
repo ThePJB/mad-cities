@@ -20,10 +20,12 @@
 #define len(X) (sizeof(X)/sizeof(X[0]))
 
 int chosen_one = 0;
+
+
 const int faction_gaia = 99999989;
 
-const auto num_points = 800;
-const auto upkeep_coefficient = 2.0;
+const auto num_points = 400;
+const auto upkeep_coefficient = 1.5;
 
 
 struct faction {
@@ -50,9 +52,9 @@ enum biome {
     BIOME_BIG_MOUNTAIN,
 };
 
-biome get_biome(float x, float y) {
+biome get_biome(float x, float y, uint32_t seed) {
     const auto r = point(x, y).dist(point(0.5, 0.5));
-    const auto height = (1.0 - 2*r) * 0.0 + 1.0 * hash_fbm2_4(4 * point(x,y), 98944);
+    const auto height = (1.0 - 2*r) * 0.0 + 1.0 * hash_fbm2_4(3 * point(x,y), 98944 + seed);
 
     if (height < 0.3) {
         return BIOME_OCEAN;
@@ -70,8 +72,8 @@ struct region {
     int faction_key;
     biome m_biome;
 
-    region(int idx, float x, float y) {
-        const auto b = get_biome(x, y);
+    region(int idx, float x, float y, uint32_t seed) {
+        const auto b = get_biome(x, y, seed);
         if (b == BIOME_OCEAN || b == BIOME_BIG_MOUNTAIN) {
             // no faction
             faction_key = faction_gaia;
@@ -99,8 +101,7 @@ struct world {
 
     uint32_t rng = 23424;
     
-    world() {
-        uint32_t seed = 0;
+    world(uint32_t seed) {
         auto points = vla<point>();
         for (int i = 0; i < num_points; i++) {
             seed = hash(seed);
@@ -117,15 +118,15 @@ struct world {
             const auto site = v.get_site(i);
             const jcv_graphedge* edge = site->edges;
 
-            regions.push(region(i, site->p.x, site->p.y));
+            regions.push(region(i, site->p.x, site->p.y, seed));
             if (regions.items[regions.length-1].faction_key != faction_gaia) {
                 factions.set(hash(i), (faction){
                     .id = hash(i),
-                    .colour = (hsv) {
-                        .h = hash_floatn(hash(i), 0, 360),
-                        .s = 0.5,
-                        .v = 0.9,
-                    },
+                    .colour = hsv(
+                        hash_floatn(hash(i)+seed, 0, 360),
+                        0.5,
+                        0.9
+                    ),
                     .money = 0,
                     .owned_regions = vla<int>(),
                     .capital = i,
@@ -137,7 +138,21 @@ struct world {
         points.destroy();
     }
 
+    void destroy() {
+        regions.destroy();
+        factions.destroy();
+        roads.destroy();
+        v.destroy();
+    }
+
     void draw(render_context *rc) {
+        auto keys = SDL_GetKeyboardState(NULL);
+        auto income_view = false;
+        if (keys[SDL_SCANCODE_I]) {
+            income_view = true;
+        }
+
+
         for (int i = 0; i < v.num_sites(); i++) {
             const auto site = v.get_site(i);
             const auto faction_key = regions.items[site->index].faction_key;
@@ -177,6 +192,11 @@ struct world {
                 }
             }
 
+            if (income_view && regions.items[i].m_biome != BIOME_OCEAN && regions.items[i].m_biome != BIOME_BIG_MOUNTAIN) {
+                auto money_rate = hash_fbm2_4(4 * site->p, 2312314);
+                rgb = {1-money_rate, money_rate, 0.0f};
+            }
+
             auto e = site->edges;
             while (e) {
                 rc->draw_triangle(rgb, site->p, e->pos[0], e->pos[1]);
@@ -190,6 +210,21 @@ struct world {
             const auto start = v.get_site(r.start_site)->p;
             const auto end = v.get_site(r.end_site)->p;
             rc->draw_line(rgb(0.7, 0.7, 0.4), start, end, 3);
+        }
+
+        // draw edges
+        const jcv_edge* edge = jcv_diagram_get_edges(&v.diagram);
+        while(edge) {
+            const auto f1 = regions.items[edge->sites[0]->index].faction_key;
+            if (!edge->sites[1]) {
+                edge = edge->next;
+                continue;
+            };
+            const auto f2 = regions.items[edge->sites[1]->index].faction_key;
+            if (f1 != f2) {
+                rc->draw_line(rgb(1,1,1), edge->pos[0], edge->pos[1], 1);
+            }
+            edge = edge->next;
         }
 
         factions.iter_begin();
@@ -211,7 +246,7 @@ struct world {
             faction *faction_ptr = factions.get(faction_key);
 
             // first make money
-            const auto money_rate = hash_floatn(faction_key + 2312314, 0, 1);
+            auto money_rate = hash_fbm2_4(4 * v.get_site(i)->p, 2312314); // wow some retarded stuff going on with capital site
             faction_ptr->money += money_rate*dt;
             const auto capital_site = v.get_site(faction_ptr->capital);
             const auto capital_pt = point(capital_site->p.x, capital_site->p.y);
@@ -222,7 +257,7 @@ struct world {
         
             // pick a random neighbour
             rng = hash(rng);
-            const auto neighbour_idx = v.get_neighbour_idx(i, hash_intn(rng, 0, v.get_num_neighbours(i) - 1));
+            const auto neighbour_idx = v.get_neighbour_idx(i, hash_intn(rng, 0, v.get_num_neighbours(i)));
             
             // then consider just buying them
             const auto other_region = &regions.items[neighbour_idx];
@@ -235,12 +270,16 @@ struct world {
                 if (other_region->m_biome == BIOME_MOUNTAIN) {
                     price = 50;
                 }
-                if (price < faction_ptr->money) {
-                    printf("faction %d buying region %d from %d\n", faction_key, neighbour_idx, other_faction);
+                rng = hash(rng);
+                if ((hash_floatn(rng, 0, 1) < 0.01) && price < faction_ptr->money) {
+                    //printf("faction %d buying region %d from %d\n", faction_key, neighbour_idx, other_faction);
                     faction_ptr->money -= price;
                     regions.items[neighbour_idx].faction_key = faction_key;
 
-                    faction_ptr->owned_regions.remove_item(neighbour_idx);
+                    factions.get(other_faction)->owned_regions.remove_item(neighbour_idx);
+                    if (factions.get(other_faction)->owned_regions.length == 0) {
+                        printf("faction %u eliminated by %u\n", other_faction, faction_key);
+                    }
                     faction_ptr->owned_regions.push(neighbour_idx);
                 }
             }
@@ -272,6 +311,7 @@ int main(int argc, char** argv) {
 
     auto dt = 0.0;
 
+    uint32_t seed = 0;
     const auto xres = 1600;
     const auto yres = 900;
 
@@ -288,7 +328,7 @@ int main(int argc, char** argv) {
     const auto renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) fatal("null renderer");
 
-    auto w = world();
+    world w(seed);
     auto rc = render_context(renderer, 0, 0, 900, 900);
 
     auto keep_going = true;
@@ -305,6 +345,16 @@ int main(int argc, char** argv) {
                     chosen_one = w.v.get_idx_containing_point(mouse_point);
                     printf("chosen one set to %d\n", chosen_one);
                     printf("biome %d\n", w.regions.items[chosen_one].m_biome);
+                }
+            } else if (e.type == SDL_KEYDOWN) {
+                const auto sym = e.key.keysym.sym;
+                if (sym == SDLK_r) {
+                    seed++;
+                    //w.remake(seed);
+                    printf("remake time\n");
+                    w.destroy();
+                    const auto new_world = world(seed);
+                    memcpy(&w, &new_world, sizeof(world));
                 }
             }
         }

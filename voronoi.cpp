@@ -97,3 +97,8 @@ int voronoi::get_idx_containing_point(point p) {
     }
     return nearest;
 }
+
+void voronoi::destroy() {
+    jcv_diagram_free(&diagram);
+    num_neighbours.destroy();
+}
