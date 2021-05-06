@@ -20,12 +20,11 @@
 #define fatal(msg) printf("Fatal Error: %s (%s:%d)\n", msg, __FILE__, __LINE__)
 #define len(X) (sizeof(X)/sizeof(X[0]))
 
-int chosen_one = 0;
-
-
+uint32_t rollover_faction = 0;
 
 const auto num_points = 400;
-
+const auto num_factions = 20;
+const auto p_faction = 0.1;
 
 int main(int argc, char** argv) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -53,7 +52,7 @@ int main(int argc, char** argv) {
     const auto renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) fatal("null renderer");
 
-    world w(seed, num_points);
+    world w(seed, num_points, p_faction);
     auto rc = render_context(renderer, 0, 0, 900, 900);
 
     auto keep_going = true;
@@ -65,20 +64,16 @@ int main(int argc, char** argv) {
                 keep_going = false;
             } else if (e.type == SDL_MOUSEBUTTONDOWN) {
                 if (e.button.button == SDL_BUTTON_LEFT) {
-                    // get index of polygon
-                    const auto mouse_point = point(((float)e.button.x)/xres, ((float)e.button.y)/yres);
-                    chosen_one = w.v.get_idx_containing_point(mouse_point);
-                    printf("chosen one set to %d\n", chosen_one);
-                    printf("biome %d\n", w.regions.items[chosen_one].m_biome);
+                    rollover_faction = w.regions.items[w.v.get_idx_containing_point(rc.pick(e.button.x, e.button.y))].faction_key;
+                    printf("selected %s\n", w.factions.contains(rollover_faction) ? w.factions.get(rollover_faction)->name : "gaia");
                 }
             } else if (e.type == SDL_KEYDOWN) {
                 const auto sym = e.key.keysym.sym;
                 if (sym == SDLK_r) {
                     seed++;
-                    //w.remake(seed);
                     printf("remake time\n");
                     w.destroy();
-                    const auto new_world = world(seed, num_points);
+                    const auto new_world = world(seed, num_points, p_faction);
                     memcpy(&w, &new_world, sizeof(world));
                 }
             }
@@ -88,8 +83,18 @@ int main(int argc, char** argv) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        w.draw(&rc);
+        w.draw(&rc, rollover_faction);
+
+        dt = 1.0f/60.0f;
         w.update(dt);
+
+        auto keystate = SDL_GetKeyboardState(NULL);
+
+        if (keystate[SDL_SCANCODE_LSHIFT]) {
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+        }
 
         SDL_RenderPresent(renderer);
         const auto end_tick = SDL_GetPerformanceCounter();

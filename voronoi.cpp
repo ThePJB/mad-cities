@@ -13,7 +13,6 @@ void voronoi::compute_num_neighbours() {
             edge = edge->next;
         }
         num_neighbours.push(count);
-        printf("nn %d: %d\n", i, count);
     }
 }
 

@@ -8,9 +8,13 @@
 struct faction {
     uint32_t id;
     hsv colour = hsv(0,0,0);
-    float money;
-    vla<int> owned_regions;
+    float money = 0;
+    vla<int> owned_regions = vla<int>();
     int capital;
+    char *name;
+
+    faction(){};
+    faction(uint32_t seed, int capital_idx);
 };
 
 struct road_segment {
@@ -34,7 +38,7 @@ struct region {
     int faction_key;
     biome m_biome;
 
-    region(int idx, float x, float y, uint32_t seed);
+    region(int idx, uint32_t faction, float x, float y, uint32_t seed);
 };
 
 
@@ -48,8 +52,8 @@ struct world {
 
     uint32_t rng = 23424;
     
-    world(uint32_t seed, int n_points);
+    world(uint32_t seed, int n_points, float p_faction);
     void destroy();
-    void draw(render_context *rc);
+    void draw(render_context *rc, uint32_t highlight_faction);
     void update(double dt);
 };

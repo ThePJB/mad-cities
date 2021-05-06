@@ -99,7 +99,7 @@ struct dict {
     }
 
     bool contains(uint32_t key) {
-        return get_bucket(key)->empty;
+        return !get_bucket(key).empty;
     }
 
     T *get(uint32_t key) {

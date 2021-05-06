@@ -21,6 +21,10 @@ struct render_context {
         this->h = h;
     }
 
+    point pick(int x, int y) {
+        return point(float(x - xo) / w, float(y - yo) / h);
+    }
+
     void draw_rect(rgb colour, float x, float y, float w, float h) {
         SDL_SetRenderDrawColor(renderer, colour.r * 255, colour.g * 255, colour.b * 255, 255);
         SDL_Rect r = {lround(x*this->w + xo), lround(y*this->h + yo), this->w*w, this->h*h};
