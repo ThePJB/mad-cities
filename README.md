@@ -14,6 +14,8 @@
  - distinct faction colours: maybe rotating by phi or something?
  - add biome view as well
  - cut off penalty? ---- definitely
+  - if no neighbours price very cheap
+ - attacking bonus if you have more neighbours than them? maybe
  - name cities
  - notable cities - draw non capital cities too
 
@@ -87,3 +89,7 @@ factions themselves could have 'strength' to factor into conquest
 more output for water adjacency or something if port is developed
 
 got to have succession crisis if no heir lol
+
+
+have archaeology and stuff from when cities have changed hands
+history of city

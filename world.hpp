@@ -56,4 +56,5 @@ struct world {
     void destroy();
     void draw(render_context *rc, uint32_t highlight_faction);
     void update(double dt);
+    float capture_price(int idx);
 };

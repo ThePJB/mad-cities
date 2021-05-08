@@ -133,6 +133,10 @@ struct vla {
         return &items[iter_pos];
     }
 
+    T *get(int idx) {
+        return &items[idx];
+    }
+
     void remove_idx(int idx) {
         for (int i = idx; i < length; i++) {
             items[i] = items[i+1];

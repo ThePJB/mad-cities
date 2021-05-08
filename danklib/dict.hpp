@@ -34,7 +34,7 @@ struct dict {
     int iter_pos = 0;
 
     const static int default_backing_size = 10;
-    const float high_water_mark = 0.5;
+    constexpr static float high_water_mark = 0.5;
 
     dict() {
         items = (bucket<T> *)malloc(sizeof(bucket<T>) * default_backing_size);

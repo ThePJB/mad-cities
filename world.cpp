@@ -57,16 +57,27 @@ const char *second_name[] = {
     "Nation",
 };
 
+#define M_PHI 1.618033988749895
+
 faction::faction(uint32_t seed, int capital_idx) {
+    static int n_faction = 0;
+
     capital = capital_idx;
     id = hash(capital_idx);
     owned_regions.push(capital_idx);
-    colour = hsv(hash_floatn(seed + 3515902 + capital_idx*3453, 0, 360), 0.5, 0.9); // todo some golden ratio shit
+    
+    const auto start_angle = hash_floatn(seed + 32445324, 0, 360);
+    n_faction++;
+    const auto angle = fmod(start_angle + 2*M_PI*M_PHI*n_faction, 360); // like how plants work
+    colour = hsv(angle, 0.5, 0.9);
+    
     const auto first = hash_intn(seed + id, 0, len(first_name));
     const auto second = hash_intn(seed + id + 34253, 0, len(second_name));
 
     name = (char*)calloc(2 + strlen(first_name[first]) + strlen(second_name[second]), sizeof(char));
     sprintf(name, "%s %s", first_name[first], second_name[second]);
+
+    n_faction++;
 }
 
 biome get_biome(float x, float y, uint32_t seed) {
@@ -144,6 +155,32 @@ void world::destroy() {
     factions.destroy();
     roads.destroy();
     v.destroy();
+}
+
+float world::capture_price(int idx) {
+    const auto region = regions.get(idx);
+    auto price = 10;
+    if (region->m_biome == BIOME_MOUNTAIN) {
+        price = 30;
+    }
+    if (region->faction_key == faction_gaia) {
+        price *= 0.5;
+    }
+
+    // check connection to neighbours
+    bool any_allies = false;
+    for (int i = 0; i < v.get_num_neighbours(idx); i++) {
+        const auto neighbour = v.get_neighbour_idx(idx, i);
+        if (regions.get(neighbour)->faction_key == region->faction_key) {
+            any_allies = true;
+        }
+    }
+
+    if (!any_allies) {
+        price *= 0.1;
+    }
+
+    return price;
 }
 
 void world::draw(render_context *rc, uint32_t highlight_faction) {
@@ -225,9 +262,10 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
         auto capital = f->item.capital;
         auto capital_faction = regions.items[capital].faction_key;
         if (capital_faction == f->key) {
-            rc->draw_circle(rgb(0,0,0), v.get_site(capital)->p, 3);
+            rc->draw_circle(rgb(0,0,0), v.get_site(capital)->p, 5);
         } else {
             // faction with no capital lol
+            rc->draw_circle(rgb(0,0,0), v.get_site(capital)->p, 3);
         }
     }
 }
@@ -261,13 +299,7 @@ void world::update(double dt) {
         if (other_faction != faction_key) {
             // price = ?? maybe amount of money
             //const auto price = 2 + factions.items[other_faction].money;
-            auto price = 10;
-            if (other_region->m_biome == BIOME_MOUNTAIN) {
-                price = 30;
-            }
-            if (other_region->faction_key == faction_gaia) {
-                price *= 0.5;
-            }
+            const auto price = capture_price(neighbour_idx);
             rng = hash(rng);
             if ((hash_floatn(rng, 0, 1) < 0.01) && price < faction_ptr->money) {
                 //printf("faction %d buying region %d from %d\n", faction_key, neighbour_idx, other_faction);
