@@ -33,12 +33,14 @@ enum biome {
     BIOME_BIG_MOUNTAIN,
 };
 
+struct world;
+
 struct region {
     int voronoi_idx;
     int faction_key;
     biome m_biome;
 
-    region(int idx, uint32_t faction, float x, float y, uint32_t seed);
+    region(int idx, uint32_t faction, point p, world *w);
 };
 
 
@@ -50,6 +52,18 @@ struct world {
     vla<region> regions = vla<region>();
     vla<road_segment> roads = vla<road_segment>();
 
+    dict<float> river_segments = dict<float>(); // looking up by endpoints preferably?
+
+    // edge* get_downstream_edge(edge*)
+    // just call height fn at each edge and see what lower
+
+    //  maybe<int,int> get_down_
+
+    biome get_biome(point p, uint32_t seed);
+    float height(point p);
+    void make_rivers();
+
+    uint32_t seed;
     uint32_t rng = 23424;
     
     world(uint32_t seed, int n_points, float p_faction);

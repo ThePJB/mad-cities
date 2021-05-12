@@ -52,3 +52,7 @@ float hash_fbm2_4(point v, int seed) {
         0.125 * hash_noise2(8.0f * v, seed + 987443)
     ) / 1.875;
 }
+
+uint32_t just_float_bytes(float f) {
+    return *reinterpret_cast<uint32_t *>(&f);
+}

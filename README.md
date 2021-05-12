@@ -8,8 +8,22 @@
  - have enough going on that the player fills in the gaps
  - to that end show enough varied stuff and name it etc
  - discrete, named (enum) > continuous
+ - can use dict as doubledict with my own hashing, omg brilliant. so order wont matter.
+ - so for each point, let rf = amount of rainfall
+ - figure out down
+ - while down, + rf
+ - if local minima, make a lake. isoline?
+
+
+## Rivers
+ - pick a bunch of random high points and make them just go downhill
+ - or do it for every point lol
+ - so just have array for riverness
+ - if local minima, lake
 
 ## Todos
+ - have like archaeology, stuff from the 6 people that inhabited it
+ - also $current_year
  - show faction incomes
  - distinct faction colours: maybe rotating by phi or something?
  - add biome view as well

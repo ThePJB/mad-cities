@@ -14,6 +14,7 @@ CFLAGS += -Wno-unused-but-set-variable # might be a useful actually
 CFLAGS += -Wno-narrowing # might be useful too, we will c
 CFLAGS += -Wno-sign-compare
 CFLAGS += -Wno-class-memaccess
+CFLAGS += -Wno-strict-aliasing
 
 CFLAGS += -std=c++2a
 

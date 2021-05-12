@@ -4,6 +4,9 @@
 #include "vla.hpp"
 #include "point.hpp"
 
+struct outedges {
+
+};
 
 // wrapper for jc_voronoi
 // all points 0-1

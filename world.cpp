@@ -38,7 +38,8 @@ const char *first_name[] = {
     "Midnight",
     "Omen",
     "Wrath",
-
+    "Proud",
+    "Nasty",
 };
 
 const char *second_name[] = {
@@ -57,7 +58,8 @@ const char *second_name[] = {
     "Nation",
 };
 
-#define M_PHI 1.618033988749895
+#define M_PHI 0.618033988749895
+// actually phi-1 but oh well
 
 faction::faction(uint32_t seed, int capital_idx) {
     static int n_faction = 0;
@@ -68,7 +70,7 @@ faction::faction(uint32_t seed, int capital_idx) {
     
     const auto start_angle = hash_floatn(seed + 32445324, 0, 360);
     n_faction++;
-    const auto angle = fmod(start_angle + 2*M_PI*M_PHI*n_faction, 360); // like how plants work
+    const auto angle = fmod(start_angle + 360*M_PHI*n_faction, 360); // like how plants work
     colour = hsv(angle, 0.5, 0.9);
     
     const auto first = hash_intn(seed + id, 0, len(first_name));
@@ -80,23 +82,21 @@ faction::faction(uint32_t seed, int capital_idx) {
     n_faction++;
 }
 
-biome get_biome(float x, float y, uint32_t seed) {
-    const auto r = point(x, y).dist(point(0.5, 0.5));
-    const auto height = (1.0 - 2*r) * 0.0 + 1.0 * hash_fbm2_4(3 * point(x,y), 98944 + seed);
-
-    if (height < 0.3) {
+biome world::get_biome(point p, uint32_t seed) {
+    const auto h = height(p);
+    if (h < 0.3) {
         return BIOME_OCEAN;
-    } else if (height < 0.5) {
+    } else if (h < 0.5) {
         return BIOME_PLAINS;
-    } else if (height < 0.7) {
+    } else if (h < 0.7) {
         return BIOME_MOUNTAIN;
     } else {
         return BIOME_BIG_MOUNTAIN;
     }
 }
 
-region::region(int idx, uint32_t faction, float x, float y, uint32_t seed) {
-    const auto b = get_biome(x, y, seed);
+region::region(int idx, uint32_t faction, point p, world *w) {
+    const auto b = w->get_biome(p, w->seed);
     faction_key = faction;
     voronoi_idx = idx;
     m_biome = b;
@@ -106,13 +106,40 @@ float road_cost(point p1, point p2) {
     return 15*p1.dist(p2);
 }
 
-// ok the way regions are handled rn is retarded
-// it should just take faction key and not be smart
-// vla .get method probs a good idea
-// we are going to have a chance of starting as a faction, otherwise its owner is gaia
+float world::height(point p) {
+    return 1.0 * hash_fbm2_4(3 * p, 98944 + seed);
+}
 
+void world::make_rivers() {
+    /*
+    OK so here's how we're going to do rivers.
+    The data structure is a vla of segments. Segments will be hash of start point + hash of end point, so like a commutative double dict.
+    There will be upper and lower segment based on sampling heightmap. water flows downhill.
+
+    will we sample each vertex or each edge. maybe vertices better. rivers shouldnt fork right?
+    not sure how to sample the vertices though lol.
+
+    so for each vertex, calculate rainfall, follow it downhill, adding rainfall to each visited edge. Keep going til it reaches the sea,
+    or until there's a local minima. If local minima, maybe contribute a standing water value that can be used to make a lake or something
+    at which point maybe you would rerun the algorithm to exit the lake
+
+    then to draw the river its just look up the thickness of each segment
+    */
+
+   // get all edges
+    const jcv_edge* edge = jcv_diagram_get_edges(&v.diagram);
+    while(edge) {
+
+        // can I look up for an edge specific neighbouring edges?
+
+        edge = edge->next;
+    }
+
+}
 
 world::world(uint32_t seed, int n_points, float p_faction) {
+    this->seed = seed;
+    this->rng = hash(seed + 324897);
     auto points = vla<point>();
     for (int i = 0; i < n_points; i++) {
         seed = hash(seed);
@@ -129,7 +156,7 @@ world::world(uint32_t seed, int n_points, float p_faction) {
         const auto site = v.get_site(i);
         const jcv_graphedge* edge = site->edges;
 
-        auto new_region = region(i, faction_gaia, site->p.x, site->p.y, seed);
+        auto new_region = region(i, faction_gaia, site->p, this);
         if (new_region.m_biome != BIOME_OCEAN && 
                 new_region.m_biome != BIOME_BIG_MOUNTAIN &&
                 hash_floatn(seed + 324234 + i, 0, 1) < 0.1) {
