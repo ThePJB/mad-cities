@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <functional>
 #include <stdio.h>
+#include <string.h>
+#include "fatal.hpp"
 
 // todo cull some of the stupid things i put in here lol
 // maybe iterators, just begin() and end() ptrs
@@ -45,7 +47,7 @@ struct vla {
     }
 
     void push(T item) {
-        if (length == backing_size - 1) { 
+        if (length == backing_size - 1) {
             backing_size *= 2;
             items = (T *)realloc(items, backing_size * sizeof(T));
         }
@@ -133,7 +135,13 @@ struct vla {
         return &items[iter_pos];
     }
 
+    // fatal error with printf verbs
+
     T *get(int idx) {
+        if (idx < 0 || idx > length) {
+            printf("bad index %d, length %d\n", idx, length);
+            fatal("index out of bounds");
+        } 
         return &items[idx];
     }
 

@@ -107,3 +107,19 @@ got to have succession crisis if no heir lol
 
 have archaeology and stuff from when cities have changed hands
 history of city
+
+------------------------
+
+faces, edges look correct
+vert positions potensh correct
+
+with higher point counts we are getting invariant failures where edges only have one vertex. how strange.
+and also segfaults
+and also drawing wrong
+so maybe this is a wrong assumption + game logic is wrong
+
+next step: just try drawing a simple VD faces and edges. then you'll be able to see the offending degenerates as well.
+
+i guess the fix is to literally go in and deliberately degenerate the edges
+
+i think ive got to fix a bug ive already fixed before, its neighour counts being wrong, i guess because of having jank vertices

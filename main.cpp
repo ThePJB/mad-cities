@@ -16,14 +16,12 @@
 #include "colour.hpp"
 #include "point.hpp"
 #include "world.hpp"
-
-#define fatal(msg) printf("Fatal Error: %s (%s:%d)\n", msg, __FILE__, __LINE__)
+#include "fatal.hpp"
 #define len(X) (sizeof(X)/sizeof(X[0]))
 
 uint32_t rollover_faction = 0;
 
 const auto num_points = 400;
-const auto num_factions = 20;
 const auto p_faction = 0.1;
 
 int main(int argc, char** argv) {
@@ -64,7 +62,8 @@ int main(int argc, char** argv) {
                 keep_going = false;
             } else if (e.type == SDL_MOUSEBUTTONDOWN) {
                 if (e.button.button == SDL_BUTTON_LEFT) {
-                    rollover_faction = w.regions.items[w.v.get_idx_containing_point(rc.pick(e.button.x, e.button.y))].faction_key;
+                    //rollover_faction = w.regions.items[w.v.get_idx_containing_point(rc.pick(e.button.x, e.button.y))].faction_key;
+                    rollover_faction = w.regions.items[w.v.pick_face(rc.pick(e.button.x, e.button.y))].faction_key;
                     printf("selected %s\n", w.factions.contains(rollover_faction) ? w.factions.get(rollover_faction)->name : "gaia");
                 }
             } else if (e.type == SDL_KEYDOWN) {
@@ -83,6 +82,7 @@ int main(int argc, char** argv) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
+        w.v.draw(&rc);
         w.draw(&rc, rollover_faction);
 
         dt = 1.0f/60.0f;
@@ -90,12 +90,13 @@ int main(int argc, char** argv) {
 
         auto keystate = SDL_GetKeyboardState(NULL);
 
+/*
         if (keystate[SDL_SCANCODE_LSHIFT]) {
             w.update(dt);
             w.update(dt);
             w.update(dt);
         }
-
+*/
         SDL_RenderPresent(renderer);
         const auto end_tick = SDL_GetPerformanceCounter();
         dt = ((double)(end_tick - start_tick))/tick_freq;

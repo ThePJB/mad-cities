@@ -40,6 +40,9 @@ const char *first_name[] = {
     "Wrath",
     "Proud",
     "Nasty",
+    "Moonglow",
+    "Muzz",
+    "Skank",
 };
 
 const char *second_name[] = {
@@ -127,13 +130,7 @@ void world::make_rivers() {
     */
 
    // get all edges
-    const jcv_edge* edge = jcv_diagram_get_edges(&v.diagram);
-    while(edge) {
-
         // can I look up for an edge specific neighbouring edges?
-
-        edge = edge->next;
-    }
 
 }
 
@@ -149,14 +146,12 @@ world::world(uint32_t seed, int n_points, float p_faction) {
         points.push(point);
     }
     v = voronoi(points);
-    v.relax();
 
     // populate region vla
-    for (int i = 0; i < v.num_sites(); i++) {
-        const auto site = v.get_site(i);
-        const jcv_graphedge* edge = site->edges;
+    for (int i = 0; i < v.faces.length; i++) {
+        auto f = &v.faces.items[i];
 
-        auto new_region = region(i, faction_gaia, site->p, this);
+        auto new_region = region(i, faction_gaia, f->site, this);
         if (new_region.m_biome != BIOME_OCEAN && 
                 new_region.m_biome != BIOME_BIG_MOUNTAIN &&
                 hash_floatn(seed + 324234 + i, 0, 1) < 0.1) {
@@ -196,8 +191,8 @@ float world::capture_price(int idx) {
 
     // check connection to neighbours
     bool any_allies = false;
-    for (int i = 0; i < v.get_num_neighbours(idx); i++) {
-        const auto neighbour = v.get_neighbour_idx(idx, i);
+    for (int i = 0; i < v.num_face_neighbours(idx); i++) {
+        const auto neighbour = v.get_face_neighbour(idx, i);
         if (regions.get(neighbour)->faction_key == region->faction_key) {
             any_allies = true;
         }
@@ -218,10 +213,10 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
     }
 
 
-    for (int i = 0; i < v.num_sites(); i++) {
-        const auto site = v.get_site(i);
-        const auto faction_key = regions.items[site->index].faction_key;
-        
+    for (int i = 0; i < v.faces.length; i++) {
+        auto f = &v.faces.items[i];
+        const auto faction_key = regions.items[f->idx].faction_key;
+
         faction *f_ptr = NULL;
         if (faction_key != faction_gaia) {
             f_ptr = factions.get(faction_key);
@@ -247,75 +242,81 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
         }
 
         if (income_view && regions.items[i].m_biome != BIOME_OCEAN && regions.items[i].m_biome != BIOME_BIG_MOUNTAIN) {
-            auto money_rate = hash_fbm2_4(4 * site->p, 2312314);
+            auto money_rate = hash_fbm2_4(4 * f->site, 2312314);
             colour = {1-money_rate, money_rate, 0.0f};
         }
 
-        auto e = site->edges;
-        while (e) {
-            rc->draw_triangle(colour, site->p, e->pos[0], e->pos[1]);
-            e = e->next;
+        for (int j = 0; j < f->edges.length; j++) {
+            auto e = v.edges.get(*f->edges.get(j));
+            const auto p1 = f->site;
+            const auto p2 = v.verts.get( e->vert_idx.contents[0] )->site;
+            const auto p3 = v.verts.get( e->vert_idx.contents[1] )->site;
+            rc->draw_triangle(colour, p1, p2, p3);
         }
-
     }
     // draw roads
     for (int i = 0; i < roads.length; i++) {
         const auto r = roads.items[i];
-        const auto start = v.get_site(r.start_site)->p;
-        const auto end = v.get_site(r.end_site)->p;
+        const auto start = v.faces.items[r.start_site].site;
+        const auto end = v.faces.items[r.end_site].site;
         rc->draw_line(rgb(0.7, 0.7, 0.4), start, end, 3);
     }
 
     // draw edges
-    const jcv_edge* edge = jcv_diagram_get_edges(&v.diagram);
-    while(edge) {
-        const auto f1 = regions.items[edge->sites[0]->index].faction_key;
-        if (!edge->sites[1]) {
-            edge = edge->next;
+    for (int i = 0; i < v.edges.length; i++) {
+        auto edge = &v.edges.items[i];
+        
+        // edge is not guaranteed to have 2 things, skip these
+        if (edge->face_idx.contents[1] == empty_sentinel) {
             continue;
-        };
-        const auto f2 = regions.items[edge->sites[1]->index].faction_key;
-        if (f1 != f2) {
-            if (highlight_faction == f1 || highlight_faction == f2) {
-                rc->draw_line(rgb(1,1,1), edge->pos[0], edge->pos[1], 2);
-            }
-            rc->draw_line(rgb(1,1,1), edge->pos[0], edge->pos[1], 1);
         }
-        edge = edge->next;
+                
+        const auto f1 = regions.items[edge->face_idx.contents[0]].faction_key;
+        const auto f2 = regions.items[edge->face_idx.contents[1]].faction_key;
+        
+        if (f1 != f2) {
+            const auto p1 = v.verts.items[edge->vert_idx.contents[0]].site;
+            const auto p2 = v.verts.items[edge->vert_idx.contents[1]].site;
+
+            if (highlight_faction != faction_gaia && (highlight_faction == f1 || highlight_faction == f2)) {
+                rc->draw_line(rgb(1,1,1), p1, p2, 2);
+            }
+            rc->draw_line(rgb(1,1,1), p1, p2, 1);
+        }
     }
 
     factions.iter_begin();
     while (auto f = factions.iter_next()) {
         auto capital = f->item.capital;
         auto capital_faction = regions.items[capital].faction_key;
+        const auto city_site = v.faces.items[capital].site;
         if (capital_faction == f->key) {
-            rc->draw_circle(rgb(0,0,0), v.get_site(capital)->p, 5);
+            rc->draw_circle(rgb(0,0,0), city_site, 5);
         } else {
             // faction with no capital lol
-            rc->draw_circle(rgb(0,0,0), v.get_site(capital)->p, 3);
+            rc->draw_circle(rgb(0,0,0), city_site, 3);
         }
     }
 }
 
 void world::update(double dt) {
-    for (int i = 0; i < v.num_sites(); i++) {
+    for (int i = 0; i < v.faces.length; i++) {
+        auto f = &v.faces.items[i];
         const auto faction_key = regions.items[i].faction_key;
         if (faction_key == faction_gaia) continue;
         faction *faction_ptr = factions.get(faction_key);
 
         // first make money
-        auto money_rate = hash_fbm2_4(4 * v.get_site(i)->p, 2312314); // wow some retarded stuff going on with capital site
+        auto money_rate = hash_fbm2_4(4 * f->site, 2312314); // wow some retarded stuff going on with capital site
         faction_ptr->money += money_rate*dt;
-        const auto capital_site = v.get_site(faction_ptr->capital);
-        const auto capital_pt = point(capital_site->p.x, capital_site->p.y);
-        const auto this_site = v.get_site(i);
-        const auto this_pt = point(this_site->p.x, this_site->p.y);
-        const auto upkeep = upkeep_coefficient * this_pt.dist(capital_pt);
+        const auto capital_site = &v.faces.items[faction_ptr->capital];
+        const auto capital_point = capital_site->site;
+        const auto upkeep = upkeep_coefficient * f->site.dist(capital_point);
         faction_ptr->money -= upkeep*dt;
     
         // pick a random neighbour
         rng = hash(rng);
-        const auto neighbour_idx = v.get_neighbour_idx(i, hash_intn(rng, 0, v.get_num_neighbours(i)));
+        const auto neighbour_idx = v.get_face_neighbour(i, hash_intn(rng, 0, v.num_face_neighbours(i)));
         
         // then consider just buying them
         const auto other_region = &regions.items[neighbour_idx];
