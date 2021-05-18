@@ -15,6 +15,15 @@ struct fixed_set {
         return false;
     }
 
+    int size() {
+        for (int i = 0; i < N; i++) {
+            if (contents[i] == empty_sentinel) {
+                return i;
+            }
+        }
+        return N;
+    }
+
     void put(int x) {
         if (contains(x)) {
             return;

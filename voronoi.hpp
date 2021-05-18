@@ -20,6 +20,12 @@ struct edge {
     int idx;
     fixed_set<2> vert_idx = fixed_set<2>();
     fixed_set<2> face_idx = fixed_set<2>();
+
+    int other_vertex(int this_vertex) {
+        return vert_idx.contents[0] == this_vertex ?
+            vert_idx.contents[1]:
+            vert_idx.contents[0];
+    }
 };
 
 struct vertex {
@@ -161,5 +167,12 @@ struct voronoi {
             }
         }
         return min_idx;
+    }
+
+    int other_vert(int edge_idx, int vert_idx) {
+        auto e = edges.get(edge_idx);
+        return e->vert_idx.contents[0] == vert_idx ?
+            e->vert_idx.contents[1]:
+            e->vert_idx.contents[0];
     }
 };

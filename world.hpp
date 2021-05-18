@@ -71,4 +71,5 @@ struct world {
     void draw(render_context *rc, uint32_t highlight_faction);
     void update(double dt);
     float capture_price(int idx);
+    int get_lowest_edge(int vert_idx);
 };

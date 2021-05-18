@@ -81,4 +81,18 @@ struct render_context {
         const auto rgb = hsv2rgb(colour);
         draw_circle(rgb, p, radius);
     }
+
+    void draw_arrow(hsv colour, point pbase, point ptip, float width) {
+        float dx = ptip.x - pbase.x;
+        float dy = ptip.y - pbase.y;
+
+        dx /= sqrtf(dx*dx + dy*dy);
+        dy /= sqrtf(dx*dx + dy*dy);
+
+        const auto p2 = point(pbase.x + width*dy, pbase.y - width*dx);
+        const auto p3 = point(pbase.x - width*dy, pbase.y + width*dx);
+
+        draw_triangle(colour, ptip, p2, p3);
+        
+    }
 };

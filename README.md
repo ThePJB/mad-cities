@@ -123,3 +123,10 @@ next step: just try drawing a simple VD faces and edges. then you'll be able to 
 i guess the fix is to literally go in and deliberately degenerate the edges
 
 i think ive got to fix a bug ive already fixed before, its neighour counts being wrong, i guess because of having jank vertices
+
+need to show edge dir view, also maybe height mode
+
+--------------------------------------------------------
+
+its definitely doing rivers in the wrong places.
+they shouldnt be in rivers and they shouldnt be multiple from the highest node

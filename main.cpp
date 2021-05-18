@@ -21,7 +21,7 @@
 
 uint32_t rollover_faction = 0;
 
-const auto num_points = 400;
+const auto num_points = 800;
 const auto p_faction = 0.1;
 
 int main(int argc, char** argv) {

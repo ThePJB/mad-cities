@@ -110,7 +110,26 @@ float road_cost(point p1, point p2) {
 }
 
 float world::height(point p) {
-    return 1.0 * hash_fbm2_4(3 * p, 98944 + seed);
+    return 1.0 * hash_noise2(3 * p, 98944 + seed);
+//    return 1.0 * hash_fbm2_4(3 * p, 98944 + seed);
+}
+
+int world::get_lowest_edge(int vert_idx) {
+    // select edge
+    int lowest_idx = -1;
+    float lowest = 99999.0;
+    for (int j = 0; j < v.verts.get(vert_idx)->edge_idx.size(); j++) {
+        const auto edge_idx = v.verts.get(vert_idx)->edge_idx.contents[j];
+        const auto other_vert = v.other_vert(edge_idx, vert_idx);
+        const auto p = v.verts.get(other_vert)->site;
+        const auto h = height(p);
+
+        if (h < lowest) {
+            lowest = h;
+            lowest_idx = j;
+        }
+    }
+    return lowest_idx;
 }
 
 void world::make_rivers() {
@@ -132,6 +151,56 @@ void world::make_rivers() {
    // get all edges
         // can I look up for an edge specific neighbouring edges?
 
+    for (int i = 0; i < v.verts.length; i++) {
+        const auto rainfall = 0.1; // todo noise
+        auto current_vertex_idx = i;
+        while (true) {
+            auto current_vertex = v.verts.get(i);
+
+            // check if river has flowed into ocean
+            for (int j = 0; j < current_vertex->edge_idx.size(); j++) {
+                const auto edge_idx = current_vertex->edge_idx.contents[j]; // wtf am i doing muddling verts and edges
+                auto edge_neighbour_faces = v.edges.get(edge_idx)->face_idx;
+                for (int k = 0; k < edge_neighbour_faces.size(); k++) {
+                    if (regions.get(edge_neighbour_faces.contents[k])->m_biome == BIOME_OCEAN) {
+                        goto done_river;
+                    }
+                }
+            }
+
+            const auto lowest_outgoing_edge_idx = get_lowest_edge(current_vertex_idx);
+            const auto lowest_outgoing_edge = v.edges.get(v.verts.get(current_vertex_idx)->edge_idx.contents[lowest_outgoing_edge_idx]);
+            const auto river_segment_key = hash(lowest_outgoing_edge->vert_idx.contents[0]) + hash(lowest_outgoing_edge->vert_idx.contents[1]);
+
+            if (river_segments.contains(river_segment_key)) {
+                *river_segments.get(river_segment_key) += rainfall;
+            } else {
+                river_segments.set(river_segment_key, rainfall);
+            }
+
+            // then I guess we hash it and store the result
+            // and keep going til ocean or local minimum
+
+
+            // figure out which edge to take
+            // add the river segment thing
+            // keep going until water tile
+
+            // how to stop infinite loopage, maybe store generation of each river segment?
+            // current vertex = other vertex
+            auto old_vertex_idx = current_vertex_idx;
+            current_vertex_idx = lowest_outgoing_edge->other_vertex(current_vertex_idx);
+            auto new_current_v = v.verts.get(current_vertex_idx);
+
+            // check if river is at a local minima
+            // well that would be also if the height of the place its going is greater than the height of here
+            if (height(v.verts.get(current_vertex_idx)->site) > height(v.verts.get(old_vertex_idx)->site)) {
+                printf("Local minima\n");
+                goto done_river;
+            }
+        }
+        done_river:(void(0));
+    }
 }
 
 world::world(uint32_t seed, int n_points, float p_faction) {
@@ -164,6 +233,8 @@ world::world(uint32_t seed, int n_points, float p_faction) {
     }
 
     points.destroy();
+
+    make_rivers();
 }
 
 void world::destroy() {
@@ -205,11 +276,22 @@ float world::capture_price(int idx) {
     return price;
 }
 
+enum overlay_type {
+    OL_NONE,
+    OL_INCOME,
+    OL_HEIGHT,
+    OL_EDGE_DOWNHILL,
+};
+
 void world::draw(render_context *rc, uint32_t highlight_faction) {
     auto keys = SDL_GetKeyboardState(NULL);
-    auto income_view = false;
+    auto overlay = OL_NONE;
     if (keys[SDL_SCANCODE_I]) {
-        income_view = true;
+        overlay = OL_INCOME;
+    } else if (keys[SDL_SCANCODE_H]) {
+        overlay = OL_HEIGHT;
+    } else if (keys[SDL_SCANCODE_E]) {
+        overlay = OL_EDGE_DOWNHILL;
     }
 
 
@@ -241,9 +323,14 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
             colour = {1, 0, 1};
         }
 
-        if (income_view && regions.items[i].m_biome != BIOME_OCEAN && regions.items[i].m_biome != BIOME_BIG_MOUNTAIN) {
-            auto money_rate = hash_fbm2_4(4 * f->site, 2312314);
+        if (overlay == OL_INCOME && regions.items[i].m_biome != BIOME_OCEAN && regions.items[i].m_biome != BIOME_BIG_MOUNTAIN) {
+            const auto money_rate = hash_fbm2_4(4 * f->site, 2312314);
             colour = {1-money_rate, money_rate, 0.0f};
+        }
+
+        if (overlay == OL_HEIGHT) {
+            const auto h = height(this->v.faces.get(i)->site);
+            colour = {h, h, h};
         }
 
         for (int j = 0; j < f->edges.length; j++) {
@@ -273,17 +360,36 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
                 
         const auto f1 = regions.items[edge->face_idx.contents[0]].faction_key;
         const auto f2 = regions.items[edge->face_idx.contents[1]].faction_key;
+        const auto p1 = v.verts.items[edge->vert_idx.contents[0]].site;
+        const auto p2 = v.verts.items[edge->vert_idx.contents[1]].site;
         
         if (f1 != f2) {
-            const auto p1 = v.verts.items[edge->vert_idx.contents[0]].site;
-            const auto p2 = v.verts.items[edge->vert_idx.contents[1]].site;
 
             if (highlight_faction != faction_gaia && (highlight_faction == f1 || highlight_faction == f2)) {
                 rc->draw_line(rgb(1,1,1), p1, p2, 2);
             }
             rc->draw_line(rgb(1,1,1), p1, p2, 1);
         }
+
+        const auto river_segment_hash = hash(edge->vert_idx.contents[0]) + hash(edge->vert_idx.contents[1]);
+        if (river_segments.contains(river_segment_hash)) {
+            const auto riverness = *river_segments.get(river_segment_hash);
+            if (riverness > 0.0) {
+                const auto width = sqrtf(10*riverness);
+                rc->draw_line(rgb(0,0,1), p1, p2, width);
+            }
+        }
+
+        if (overlay == OL_EDGE_DOWNHILL) {
+            if (height(p1) > height(p2)) {
+                // draw a triangle pointing from p1 to p2
+                rc->draw_arrow(hsv(0,0,1), p1, p2, 0.005);
+            } else {
+                rc->draw_arrow(hsv(0,0,1), p2, p1, 0.005);
+            }   
+        }
     }
+    
 
     factions.iter_begin();
     while (auto f = factions.iter_next()) {
