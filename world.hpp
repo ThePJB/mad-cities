@@ -60,6 +60,7 @@ struct world {
 
     biome get_biome(point p, uint32_t seed);
     float height(point p);
+    float rainfall(point p);
     void make_rivers();
 
     uint32_t seed;
@@ -71,8 +72,4 @@ struct world {
     void update(double dt);
     float capture_price(int idx);
     int get_lowest_edge(int vert_idx);
-    
-    vertex_outgoing_edges_iterator vert_edges_it(int vert_idx) {
-        return vertex_outgoing_edges_iterator(&v, vert_idx);
-    }
 };

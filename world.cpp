@@ -1,4 +1,5 @@
 #include "world.hpp"
+#include "coolmath.hpp"
 #include <string.h>
 
 const int faction_gaia = 99999989;
@@ -109,10 +110,14 @@ float road_cost(point p1, point p2) {
     return 15*p1.dist(p2);
 }
 
+float world::rainfall(point p) {
+    return 0.2 * hash_noise2(3 * p, 44548328 + seed);
+}
+
 float world::height(point p) {
     //return sqrtf(p.x*p.x + p.y*p.y);
     return 1.0 * hash_noise2(3 * p, 98944 + seed);
-//    return 1.0 * hash_fbm2_4(3 * p, 98944 + seed);
+    //return 1.0 * hash_fbm2_4(3 * p, 98944 + seed);
 }
 
 int world::get_lowest_edge(int vert_idx) {
@@ -149,30 +154,38 @@ void world::make_rivers() {
     */
 
     for (int i = 0; i < v.verts.length; i++) {
-        const auto rainfall = 0.1; // todo noise
         auto current_vertex_idx = i;
+        printf("rainfall at vertex %d\n", i);
         while (true) {
-            auto vert_edges_it = 
-
-            auto current_vertex = v.verts.get(i);
+            printf("\tvisiting vertex %d\n", current_vertex_idx);
 
             // check if river has flowed into ocean
-            for (int j = 0; j < current_vertex->edge_idx.size(); j++) {
-                const auto edge_idx = current_vertex->edge_idx.contents[j];
-                auto edge_neighbour_faces = v.edges.get(edge_idx)->face_idx;
-                for (int k = 0; k < edge_neighbour_faces.size(); k++) {
-                    if (regions.get(edge_neighbour_faces.contents[k])->m_biome == BIOME_OCEAN) {
-                        printf("ocean termination\n");
+            auto edge_it = v.verts.get(current_vertex_idx)->edge_idx.iter();
+            while (edge_it.has_next()) {
+                const auto e_idx = edge_it.next();
+                auto face_it = v.edges.get(e_idx)->face_idx.iter();
+                while (face_it.has_next()) {
+                    const auto f_idx = face_it.next();
+                    const auto region = regions.get(f_idx);
+                    if (region->m_biome == BIOME_OCEAN) {
+                        printf("\t\tcheckin face %d, biome is %d\n", f_idx, region->m_biome);
+                        printf("\t\tocean termination\n");
                         goto done_river;
                     }
                 }
             }
 
             const auto lowest_outgoing_edge_idx = get_lowest_edge(current_vertex_idx);
-            rivers.items[lowest_outgoing_edge_idx] += rainfall;
+            rivers.items[lowest_outgoing_edge_idx] += rainfall(v.verts.get(i)->site);
 
             auto old_vertex_idx = current_vertex_idx;
             current_vertex_idx = v.edges.get(lowest_outgoing_edge_idx)->other_vertex(current_vertex_idx);
+
+            if (old_vertex_idx == current_vertex_idx) {
+                printf("wtf\n");
+                goto done_river;
+            }
+
             auto new_current_v = v.verts.get(current_vertex_idx);
 
             // check if river is at a local minima
@@ -270,6 +283,7 @@ enum overlay_type {
     OL_INCOME,
     OL_HEIGHT,
     OL_EDGE_DOWNHILL,
+    OL_RAINFALL,
 };
 
 void world::draw(render_context *rc, uint32_t highlight_faction) {
@@ -281,6 +295,8 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
         overlay = OL_HEIGHT;
     } else if (keys[SDL_SCANCODE_E]) {
         overlay = OL_EDGE_DOWNHILL;
+    } else if (keys[SDL_SCANCODE_F]) {
+        overlay = OL_RAINFALL;
     }
 
 
@@ -322,6 +338,11 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
             colour = {h, h, h};
         }
 
+        if (overlay == OL_RAINFALL) {
+            const auto r = 5*rainfall(v.faces.get(i)->site);
+            colour = {cm_lerp(1, 0, r), cm_lerp(1, 0, r), cm_lerp(0, 1, r)};
+        }
+
         for (int j = 0; j < f->edges.length; j++) {
             auto e = v.edges.get(*f->edges.get(j));
             const auto p1 = f->site;
@@ -361,8 +382,8 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
         }
 
         const auto riverness = rivers.items[i];
-        if (riverness > 0.01) {
-            const auto width = sqrtf(10*riverness);
+        if (riverness > 0.5) {
+            const auto width = sqrtf(4*riverness);
             rc->draw_line(rgb(0,0,1), p1, p2, width);
         }
 

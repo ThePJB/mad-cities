@@ -146,4 +146,12 @@ some retarded stuff happening with rivers.
   - some non adjacent edges lmao
   - some instability, infinite loops happen for some reason
 
-  maybe I should just make a set iter idk
+maybe I should just make a set iter idk
+
+ok it is doing something, the neighbour info must be r8 fucked
+ok well as far as neighbour biomes go it looks correct from main debug stuff lmao
+
+so the one that starts there terminates but the other ones keep going for some reason lmao
+visiting a loop just involves 
+
+infinite loop: theres a vertex (844) It just visits itself continuously

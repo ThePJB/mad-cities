@@ -34,23 +34,6 @@ struct vertex {
     point site;
 };
 
-struct vertex_outgoing_edges_iterator {
-    vertex *vert;
-    int current = 0;
-
-    vertex_outgoing_edges_iterator(voronoi *diagram, int vertex_idx) {
-        this->vert = diagram->verts.get(vertex_idx);
-    }
-
-    bool has_next() {
-        return current < vert->edge_idx.size();
-    }
-
-    int next() {
-        return vert->edge_idx.contents[current++];
-    }
-};
-
 struct voronoi {
     vla<face> faces;
     vla<edge> edges;
@@ -206,4 +189,14 @@ struct voronoi {
             e->vert_idx.contents[0];
     }
 
+    void fill_face(render_context *rc, int face_idx, hsv colour) {
+        auto f = faces.get(face_idx);
+        for (int j = 0; j < f->edges.length; j++) {
+            auto e = edges.get(*f->edges.get(j));
+            const auto p1 = f->site;
+            const auto p2 = verts.get( e->vert_idx.contents[0] )->site;
+            const auto p3 = verts.get( e->vert_idx.contents[1] )->site;
+            rc->draw_triangle(colour, p1, p2, p3);
+        }
+    }
 };

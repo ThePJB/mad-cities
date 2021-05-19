@@ -69,6 +69,5 @@ uint32_t round_float(uint32_t float_bytes, int num_bits) {
     for (int i = 0; i < num_bits; i++) {
         mask |= (1 << (23 - i));
     }
-    printf("mask %d %X\n", num_bits, mask);
     return float_bytes & mask;
 }

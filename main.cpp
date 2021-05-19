@@ -22,7 +22,7 @@
 uint32_t rollover_faction = 0;
 int rollover_vertex = 0;
 
-const auto num_points = 400;
+const auto num_points = 600;
 const auto p_faction = 0.1;
 
 void test_round(float f) {
@@ -79,9 +79,11 @@ int main(int argc, char** argv) {
     world w(seed, num_points, p_faction);
     auto rc = render_context(renderer, 0, 0, 900, 900);
 
+/*
     for (int i = 0; i < w.v.verts.length; i++) {
         printf("%d: %.10f %.10f\n", i, w.v.verts.items[i].site.x, w.v.verts.items[i].site.y);
     }
+*/
 
     auto keep_going = true;
     while (keep_going) {
@@ -90,6 +92,7 @@ int main(int argc, char** argv) {
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
                 keep_going = false;
+                fflush(stdout);
             } else if (e.type == SDL_MOUSEBUTTONDOWN) {
                 if (e.button.button == SDL_BUTTON_LEFT) {
                     const auto click_point = rc.pick(e.button.x, e.button.y);
@@ -97,6 +100,17 @@ int main(int argc, char** argv) {
                     rollover_faction = w.regions.items[w.v.pick_face(click_point)].faction_key;
                     printf("selected %s\n", w.factions.contains(rollover_faction) ? w.factions.get(rollover_faction)->name : "gaia");
                     printf("selected vertex %d\n", rollover_vertex);
+
+
+                    auto edge_it = w.v.verts.get(rollover_vertex)->edge_idx.iter();
+                    while (edge_it.has_next()) {
+                        const auto e_idx = edge_it.next();
+                        auto face_it = w.v.edges.get(e_idx)->face_idx.iter();
+                        while (face_it.has_next()) {
+                            const auto f_idx = face_it.next();
+                            printf("vert adjacent face %d biome: %d\n", f_idx, w.regions.get(f_idx)->m_biome);
+                        }
+                    }
                 }
             } else if (e.type == SDL_KEYDOWN) {
                 const auto sym = e.key.keysym.sym;
@@ -116,6 +130,17 @@ int main(int argc, char** argv) {
 
         w.v.draw(&rc);
         w.draw(&rc, rollover_faction);
+
+
+        auto edge_it = w.v.verts.get(rollover_vertex)->edge_idx.iter();
+        while (edge_it.has_next()) {
+            const auto e_idx = edge_it.next();
+            auto face_it = w.v.edges.get(e_idx)->face_idx.iter();
+            while (face_it.has_next()) {
+                const auto f_idx = face_it.next();
+                w.v.fill_face(&rc, f_idx, hsv(120, 1, 1));
+            }
+        }
 
         rc.draw_circle(hsv(0, 1, 1), w.v.verts.get(rollover_vertex)->site, 5);
         const auto rollover_vertex_lowest_edge = w.v.edges.get(w.get_lowest_edge(rollover_vertex));
