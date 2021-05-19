@@ -34,6 +34,23 @@ struct vertex {
     point site;
 };
 
+struct vertex_outgoing_edges_iterator {
+    vertex *vert;
+    int current = 0;
+
+    vertex_outgoing_edges_iterator(voronoi *diagram, int vertex_idx) {
+        this->vert = diagram->verts.get(vertex_idx);
+    }
+
+    bool has_next() {
+        return current < vert->edge_idx.size();
+    }
+
+    int next() {
+        return vert->edge_idx.contents[current++];
+    }
+};
+
 struct voronoi {
     vla<face> faces;
     vla<edge> edges;
@@ -169,10 +186,24 @@ struct voronoi {
         return min_idx;
     }
 
+    int pick_vertex(point p) {
+        auto min_idx = 0;
+        auto min_dist = 999.0;
+        for (int i = 0; i < verts.length; i++) {
+            auto d = p.dist(verts.get(i)->site);
+            if (d < min_dist) {
+                min_idx = i;
+                min_dist = d;
+            }
+        }
+        return min_idx;
+    }
+
     int other_vert(int edge_idx, int vert_idx) {
         auto e = edges.get(edge_idx);
         return e->vert_idx.contents[0] == vert_idx ?
             e->vert_idx.contents[1]:
             e->vert_idx.contents[0];
     }
+
 };

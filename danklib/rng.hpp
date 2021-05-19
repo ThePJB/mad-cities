@@ -8,3 +8,5 @@ float hash_noise2(point v, int seed);
 float hash_fbm2_4(point v, int seed);
 
 uint32_t just_float_bytes(float f);
+float bytes_to_float(uint32_t float_bytes);
+uint32_t round_float(uint32_t float_bytes, int num_bits);

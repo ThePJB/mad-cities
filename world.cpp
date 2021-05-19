@@ -110,12 +110,12 @@ float road_cost(point p1, point p2) {
 }
 
 float world::height(point p) {
+    //return sqrtf(p.x*p.x + p.y*p.y);
     return 1.0 * hash_noise2(3 * p, 98944 + seed);
 //    return 1.0 * hash_fbm2_4(3 * p, 98944 + seed);
 }
 
 int world::get_lowest_edge(int vert_idx) {
-    // select edge
     int lowest_idx = -1;
     float lowest = 99999.0;
     for (int j = 0; j < v.verts.get(vert_idx)->edge_idx.size(); j++) {
@@ -129,7 +129,7 @@ int world::get_lowest_edge(int vert_idx) {
             lowest_idx = j;
         }
     }
-    return lowest_idx;
+    return v.verts.get(vert_idx)->edge_idx.contents[lowest_idx];
 }
 
 void world::make_rivers() {
@@ -148,57 +148,42 @@ void world::make_rivers() {
     then to draw the river its just look up the thickness of each segment
     */
 
-   // get all edges
-        // can I look up for an edge specific neighbouring edges?
-
     for (int i = 0; i < v.verts.length; i++) {
         const auto rainfall = 0.1; // todo noise
         auto current_vertex_idx = i;
         while (true) {
+            auto vert_edges_it = 
+
             auto current_vertex = v.verts.get(i);
 
             // check if river has flowed into ocean
             for (int j = 0; j < current_vertex->edge_idx.size(); j++) {
-                const auto edge_idx = current_vertex->edge_idx.contents[j]; // wtf am i doing muddling verts and edges
+                const auto edge_idx = current_vertex->edge_idx.contents[j];
                 auto edge_neighbour_faces = v.edges.get(edge_idx)->face_idx;
                 for (int k = 0; k < edge_neighbour_faces.size(); k++) {
                     if (regions.get(edge_neighbour_faces.contents[k])->m_biome == BIOME_OCEAN) {
+                        printf("ocean termination\n");
                         goto done_river;
                     }
                 }
             }
 
             const auto lowest_outgoing_edge_idx = get_lowest_edge(current_vertex_idx);
-            const auto lowest_outgoing_edge = v.edges.get(v.verts.get(current_vertex_idx)->edge_idx.contents[lowest_outgoing_edge_idx]);
-            const auto river_segment_key = hash(lowest_outgoing_edge->vert_idx.contents[0]) + hash(lowest_outgoing_edge->vert_idx.contents[1]);
+            rivers.items[lowest_outgoing_edge_idx] += rainfall;
 
-            if (river_segments.contains(river_segment_key)) {
-                *river_segments.get(river_segment_key) += rainfall;
-            } else {
-                river_segments.set(river_segment_key, rainfall);
-            }
-
-            // then I guess we hash it and store the result
-            // and keep going til ocean or local minimum
-
-
-            // figure out which edge to take
-            // add the river segment thing
-            // keep going until water tile
-
-            // how to stop infinite loopage, maybe store generation of each river segment?
-            // current vertex = other vertex
             auto old_vertex_idx = current_vertex_idx;
-            current_vertex_idx = lowest_outgoing_edge->other_vertex(current_vertex_idx);
+            current_vertex_idx = v.edges.get(lowest_outgoing_edge_idx)->other_vertex(current_vertex_idx);
             auto new_current_v = v.verts.get(current_vertex_idx);
 
             // check if river is at a local minima
             // well that would be also if the height of the place its going is greater than the height of here
             if (height(v.verts.get(current_vertex_idx)->site) > height(v.verts.get(old_vertex_idx)->site)) {
                 printf("Local minima\n");
+                // currently should not happen
                 goto done_river;
             }
         }
+        
         done_river:(void(0));
     }
 }
@@ -230,6 +215,10 @@ world::world(uint32_t seed, int n_points, float p_faction) {
             factions.set(new_faction.id, new_faction);
         }
         regions.push(new_region);
+    }
+
+    for (int i = 0; i < v.edges.length; i++) {
+        rivers.push(0.0f);
     }
 
     points.destroy();
@@ -371,13 +360,10 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
             rc->draw_line(rgb(1,1,1), p1, p2, 1);
         }
 
-        const auto river_segment_hash = hash(edge->vert_idx.contents[0]) + hash(edge->vert_idx.contents[1]);
-        if (river_segments.contains(river_segment_hash)) {
-            const auto riverness = *river_segments.get(river_segment_hash);
-            if (riverness > 0.0) {
-                const auto width = sqrtf(10*riverness);
-                rc->draw_line(rgb(0,0,1), p1, p2, width);
-            }
+        const auto riverness = rivers.items[i];
+        if (riverness > 0.01) {
+            const auto width = sqrtf(10*riverness);
+            rc->draw_line(rgb(0,0,1), p1, p2, width);
         }
 
         if (overlay == OL_EDGE_DOWNHILL) {

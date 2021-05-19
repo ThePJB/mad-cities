@@ -1,6 +1,7 @@
 #include "rng.hpp"
 #include "dankmath.hpp"
 #include "point.hpp"
+#include <stdio.h>
 
 #define U32_MAX 0xFFFFFFFF
 
@@ -55,4 +56,19 @@ float hash_fbm2_4(point v, int seed) {
 
 uint32_t just_float_bytes(float f) {
     return *reinterpret_cast<uint32_t *>(&f);
+}
+
+float bytes_to_float(uint32_t float_bytes) {
+    return *reinterpret_cast<float *>(&float_bytes);
+}
+
+// for best results num_bits should be < mantissa length lmao
+uint32_t round_float(uint32_t float_bytes, int num_bits) {
+    // not sure about rounding up in binary, is that a thing?
+    auto mask = 0xFF800000;
+    for (int i = 0; i < num_bits; i++) {
+        mask |= (1 << (23 - i));
+    }
+    printf("mask %d %X\n", num_bits, mask);
+    return float_bytes & mask;
 }

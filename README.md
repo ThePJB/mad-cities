@@ -128,5 +128,22 @@ need to show edge dir view, also maybe height mode
 
 --------------------------------------------------------
 
+interesting income is always the same function lol
+
 its definitely doing rivers in the wrong places.
 they shouldnt be in rivers and they shouldnt be multiple from the highest node
+
+maybe get lowest edge is wrong, need to select verts
+lowest edge retarded
+
+--------------
+
+ok so there are duplicate points, need to round floating point to a certain interval thing, maybe 3 d.p. can also maybe use double for jcv
+
+-------------------
+some retarded stuff happening with rivers.
+  - ok ocean detect just straight up does not work
+  - some non adjacent edges lmao
+  - some instability, infinite loops happen for some reason
+
+  maybe I should just make a set iter idk

@@ -89,8 +89,10 @@ struct render_context {
         dx /= sqrtf(dx*dx + dy*dy);
         dy /= sqrtf(dx*dx + dy*dy);
 
-        const auto p2 = point(pbase.x + width*dy, pbase.y - width*dx);
-        const auto p3 = point(pbase.x - width*dy, pbase.y + width*dx);
+        const auto midpoint = point((ptip.x + pbase.x)/2, (ptip.y + pbase.y)/2);
+
+        const auto p2 = point(midpoint.x + width*dy, midpoint.y - width*dx);
+        const auto p3 = point(midpoint.x - width*dy, midpoint.y + width*dx);
 
         draw_triangle(colour, ptip, p2, p3);
         

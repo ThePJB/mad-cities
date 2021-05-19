@@ -51,8 +51,7 @@ struct world {
     
     vla<region> regions = vla<region>();
     vla<road_segment> roads = vla<road_segment>();
-
-    dict<float> river_segments = dict<float>(); // looking up by endpoints preferably?
+    vla<float> rivers = vla<float>();
 
     // edge* get_downstream_edge(edge*)
     // just call height fn at each edge and see what lower
@@ -72,4 +71,8 @@ struct world {
     void update(double dt);
     float capture_price(int idx);
     int get_lowest_edge(int vert_idx);
+    
+    vertex_outgoing_edges_iterator vert_edges_it(int vert_idx) {
+        return vertex_outgoing_edges_iterator(&v, vert_idx);
+    }
 };

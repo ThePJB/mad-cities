@@ -112,7 +112,10 @@ voronoi::voronoi(vla<point> points) {
                 continue;
             }
             auto vertex_try_adder = [&](point p){
-                const auto p_hash = hash(just_float_bytes(p.x) + 344325*just_float_bytes(p.y));
+                const auto round_bits = 10;
+                const auto p_hash = hash(
+                    round_float(just_float_bytes(p.x), round_bits) + 
+                    344325*round_float(just_float_bytes(p.y), round_bits));
                 if (!vertex_dict.contains(p_hash)) {
                     vertex v = vertex();
                     v.site = p;

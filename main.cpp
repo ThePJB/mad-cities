@@ -20,11 +20,37 @@
 #define len(X) (sizeof(X)/sizeof(X[0]))
 
 uint32_t rollover_faction = 0;
+int rollover_vertex = 0;
 
-const auto num_points = 800;
+const auto num_points = 400;
 const auto p_faction = 0.1;
 
+void test_round(float f) {
+    auto bytes = just_float_bytes(f);
+    auto round4 = round_float(bytes, 4);
+    auto back4 = bytes_to_float(round4);
+    auto round6 = round_float(bytes, 6);
+    auto back6 = bytes_to_float(round6);
+    auto round8 = round_float(bytes, 8);
+    auto back8 = bytes_to_float(round8);
+    printf("test round %f - %X:\n", f, bytes);
+    printf("\t %f - %X\n", back4, round4);
+    printf("\t %f - %X\n", back6, round6);
+    printf("\t %f - %X\n", back8, round8);
+}
+
 int main(int argc, char** argv) {
+    /*
+    test_round(1.000f);
+    test_round(0.9999999f);
+    test_round(0.15243f);
+    test_round(0.15247f);
+    test_round(0.125f);
+    test_round(0.124f);
+    test_round(0.126f);
+    return 0;
+    */
+
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fatal("couldn't initialize SDL");
     };
@@ -53,6 +79,10 @@ int main(int argc, char** argv) {
     world w(seed, num_points, p_faction);
     auto rc = render_context(renderer, 0, 0, 900, 900);
 
+    for (int i = 0; i < w.v.verts.length; i++) {
+        printf("%d: %.10f %.10f\n", i, w.v.verts.items[i].site.x, w.v.verts.items[i].site.y);
+    }
+
     auto keep_going = true;
     while (keep_going) {
         const auto start_tick = SDL_GetPerformanceCounter();
@@ -62,9 +92,11 @@ int main(int argc, char** argv) {
                 keep_going = false;
             } else if (e.type == SDL_MOUSEBUTTONDOWN) {
                 if (e.button.button == SDL_BUTTON_LEFT) {
-                    //rollover_faction = w.regions.items[w.v.get_idx_containing_point(rc.pick(e.button.x, e.button.y))].faction_key;
-                    rollover_faction = w.regions.items[w.v.pick_face(rc.pick(e.button.x, e.button.y))].faction_key;
+                    const auto click_point = rc.pick(e.button.x, e.button.y);
+                    rollover_vertex = w.v.pick_vertex(click_point);
+                    rollover_faction = w.regions.items[w.v.pick_face(click_point)].faction_key;
                     printf("selected %s\n", w.factions.contains(rollover_faction) ? w.factions.get(rollover_faction)->name : "gaia");
+                    printf("selected vertex %d\n", rollover_vertex);
                 }
             } else if (e.type == SDL_KEYDOWN) {
                 const auto sym = e.key.keysym.sym;
@@ -84,6 +116,14 @@ int main(int argc, char** argv) {
 
         w.v.draw(&rc);
         w.draw(&rc, rollover_faction);
+
+        rc.draw_circle(hsv(0, 1, 1), w.v.verts.get(rollover_vertex)->site, 5);
+        const auto rollover_vertex_lowest_edge = w.v.edges.get(w.get_lowest_edge(rollover_vertex));
+        rc.draw_line(hsv(0, 1, 1), 
+            w.v.verts.get(rollover_vertex_lowest_edge->vert_idx.contents[0])->site,
+            w.v.verts.get(rollover_vertex_lowest_edge->vert_idx.contents[1])->site,
+            3
+        );
 
         dt = 1.0f/60.0f;
         w.update(dt);
