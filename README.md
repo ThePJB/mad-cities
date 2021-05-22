@@ -155,3 +155,15 @@ so the one that starts there terminates but the other ones keep going for some r
 visiting a loop just involves 
 
 infinite loop: theres a vertex (844) It just visits itself continuously
+
+domain warping might make this a lot cooler
+
+----------
+
+maybe the stupid edge thing is literally just in drawing edges, doesnt hapen with faces
+it does happen with the selecty thing
+idk why it happens with that and not with normal faces
+actually faces must do it but just get drawn over
+the thing never goes up. so it must be 2x as common
+
+no way it was actually stupid hashing

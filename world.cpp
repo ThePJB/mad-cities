@@ -343,6 +343,8 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
             colour = {cm_lerp(1, 0, r), cm_lerp(1, 0, r), cm_lerp(0, 1, r)};
         }
 
+        v.fill_face(rc, i, rgb2hsv(colour));
+/*
         for (int j = 0; j < f->edges.length; j++) {
             auto e = v.edges.get(*f->edges.get(j));
             const auto p1 = f->site;
@@ -350,6 +352,7 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
             const auto p3 = v.verts.get( e->vert_idx.contents[1] )->site;
             rc->draw_triangle(colour, p1, p2, p3);
         }
+        */
     }
     // draw roads
     for (int i = 0; i < roads.length; i++) {

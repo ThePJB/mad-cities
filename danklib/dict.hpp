@@ -10,7 +10,7 @@ struct bucket {
     T item;
     uint32_t key = empty_bucket;
 
-    bucket<T>(){}
+    bucket(){}
 };
 
 // only good for one set so be careful

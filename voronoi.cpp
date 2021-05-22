@@ -82,16 +82,6 @@ voronoi::voronoi(vla<point> points) {
                 if (!face->neighbour_faces.contains(face_idx1)) face->neighbour_faces.push(face_idx1);
             }
 
-            // actually nah its certainly wrong here
-
-            // current problem: edges have stupid face indexes
-            // it looks like their fate is closely tied to the faces which seem more correct,
-            // like we write to the edge what its face is, then we look up that face and write to it that it has this edge
-
-            // do edges get fucked with later?
-
-            // could certainly write a function check consistency
-
             edges.push(e);
 
             edge_idx++;
@@ -114,8 +104,8 @@ voronoi::voronoi(vla<point> points) {
             auto vertex_try_adder = [&](point p){
                 const auto round_bits = 10;
                 const auto p_hash = hash(
-                    round_float(just_float_bytes(p.x), round_bits) + 
-                    344325*round_float(just_float_bytes(p.y), round_bits));
+                    round_float(just_float_bytes(p.x), round_bits)) + 
+                    hash(344325*round_float(just_float_bytes(p.y), round_bits));
                 if (!vertex_dict.contains(p_hash)) {
                     vertex v = vertex();
                     v.site = p;
