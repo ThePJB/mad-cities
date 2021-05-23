@@ -167,3 +167,18 @@ actually faces must do it but just get drawn over
 the thing never goes up. so it must be 2x as common
 
 no way it was actually stupid hashing
+
+----------
+
+todo local minima makes lakes. basically need like a dam algorithm and keep flowing out til u hit the sea (or really cant lol)
+
+faction AI? maybe save money for a campaign and like blitz
+
+
+-----------------------
+
+todos:
+ - colours for biomes
+ - biome overlay
+ - incomes probs wrong lmao
+ - defence overlay

@@ -2,7 +2,6 @@
 #include "coolmath.hpp"
 #include <string.h>
 
-const int faction_gaia = 99999989;
 
 const auto upkeep_coefficient = 1.5;
 
@@ -43,7 +42,7 @@ const char *first_name[] = {
     "Nasty",
     "Moonglow",
     "Muzz",
-    "Skank",
+    "Dank",
 };
 
 const char *second_name[] = {
@@ -86,21 +85,8 @@ faction::faction(uint32_t seed, int capital_idx) {
     n_faction++;
 }
 
-biome world::get_biome(point p, uint32_t seed) {
-    const auto h = height(p);
-    if (h < 0.3) {
-        return BIOME_OCEAN;
-    } else if (h < 0.5) {
-        return BIOME_PLAINS;
-    } else if (h < 0.7) {
-        return BIOME_MOUNTAIN;
-    } else {
-        return BIOME_BIG_MOUNTAIN;
-    }
-}
-
 region::region(int idx, uint32_t faction, point p, world *w) {
-    const auto b = w->get_biome(p, w->seed);
+    const auto b = w->get_biome(p);
     faction_key = faction;
     voronoi_idx = idx;
     m_biome = b;
@@ -108,16 +94,6 @@ region::region(int idx, uint32_t faction, point p, world *w) {
 
 float road_cost(point p1, point p2) {
     return 15*p1.dist(p2);
-}
-
-float world::rainfall(point p) {
-    return 0.2 * hash_noise2(3 * p, 44548328 + seed);
-}
-
-float world::height(point p) {
-    //return sqrtf(p.x*p.x + p.y*p.y);
-    return 1.0 * hash_noise2(3 * p, 98944 + seed);
-    //return 1.0 * hash_fbm2_4(3 * p, 98944 + seed);
 }
 
 int world::get_lowest_edge(int vert_idx) {
@@ -155,9 +131,7 @@ void world::make_rivers() {
 
     for (int i = 0; i < v.verts.length; i++) {
         auto current_vertex_idx = i;
-        printf("rainfall at vertex %d\n", i);
         while (true) {
-            printf("\tvisiting vertex %d\n", current_vertex_idx);
 
             // check if river has flowed into ocean
             auto edge_it = v.verts.get(current_vertex_idx)->edge_idx.iter();
@@ -168,8 +142,6 @@ void world::make_rivers() {
                     const auto f_idx = face_it.next();
                     const auto region = regions.get(f_idx);
                     if (region->m_biome == BIOME_OCEAN) {
-                        printf("\t\tcheckin face %d, biome is %d\n", f_idx, region->m_biome);
-                        printf("\t\tocean termination\n");
                         goto done_river;
                     }
                 }
@@ -182,7 +154,7 @@ void world::make_rivers() {
             current_vertex_idx = v.edges.get(lowest_outgoing_edge_idx)->other_vertex(current_vertex_idx);
 
             if (old_vertex_idx == current_vertex_idx) {
-                printf("wtf\n");
+                printf("wtf - vertex is own next vertex lol\n");
                 goto done_river;
             }
 
@@ -251,7 +223,7 @@ void world::destroy() {
     roads.destroy();
     v.destroy();
 }
-
+/*
 float world::capture_price(int idx) {
     const auto region = regions.get(idx);
     auto price = 10;
@@ -277,7 +249,7 @@ float world::capture_price(int idx) {
 
     return price;
 }
-
+*/
 enum overlay_type {
     OL_NONE,
     OL_INCOME,
@@ -329,7 +301,7 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
         }
 
         if (overlay == OL_INCOME && regions.items[i].m_biome != BIOME_OCEAN && regions.items[i].m_biome != BIOME_BIG_MOUNTAIN) {
-            const auto money_rate = hash_fbm2_4(4 * f->site, 2312314);
+            const auto money_rate = income(i);
             colour = {1-money_rate, money_rate, 0.0f};
         }
 
@@ -423,7 +395,7 @@ void world::update(double dt) {
         faction *faction_ptr = factions.get(faction_key);
 
         // first make money
-        auto money_rate = hash_fbm2_4(4 * f->site, 2312314); // wow some retarded stuff going on with capital site
+        auto money_rate = income(i);
         faction_ptr->money += money_rate*dt;
         const auto capital_site = &v.faces.items[faction_ptr->capital];
         const auto capital_point = capital_site->site;
@@ -432,7 +404,8 @@ void world::update(double dt) {
     
         // pick a random neighbour
         rng = hash(rng);
-        const auto neighbour_idx = v.get_face_neighbour(i, hash_intn(rng, 0, v.num_face_neighbours(i)));
+        const auto neighbour_rel_idx = hash_intn(rng, 0, v.num_face_neighbours(i));
+        const auto neighbour_idx = v.get_face_neighbour(i, neighbour_rel_idx);
         
         // then consider just buying them
         const auto other_region = &regions.items[neighbour_idx];
@@ -443,7 +416,8 @@ void world::update(double dt) {
         if (other_faction != faction_key) {
             // price = ?? maybe amount of money
             //const auto price = 2 + factions.items[other_faction].money;
-            const auto price = capture_price(neighbour_idx);
+            const auto shared_edge_idx = v.face_shared_edge(i, neighbour_idx); // hopefully not -1
+            const auto price = defensive_power(neighbour_idx, shared_edge_idx);
             rng = hash(rng);
             if ((hash_floatn(rng, 0, 1) < 0.01) && price < faction_ptr->money) {
                 //printf("faction %d buying region %d from %d\n", faction_key, neighbour_idx, other_faction);

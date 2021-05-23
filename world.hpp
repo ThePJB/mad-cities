@@ -31,6 +31,38 @@ enum biome {
     BIOME_PLAINS,
     BIOME_MOUNTAIN,
     BIOME_BIG_MOUNTAIN,
+    BIOME_DESERT,
+    BIOME_PLATEAU,
+    NUM_BIOMES,
+};
+
+struct biome_prototype {
+    rgb colour;
+    float defence;
+    float income;
+
+    biome_prototype(rgb colour, float defence, float income) {
+        this->colour = colour;
+        this->defence = defence;
+        this->income = income;
+    }
+};
+
+const static biome_prototype biome_prototypes[NUM_BIOMES] = {
+    biome_prototype(rgb(0, 0, 1), 999, 0),
+    biome_prototype(rgb(0.2, 0.8, 0), 0.4, 0.5),
+    biome_prototype(rgb(0.1, 0.6, 0.1), 1.0, 0.35),
+    biome_prototype(rgb(0.3, 0.3, 0.3), 999, 0),
+    biome_prototype(rgb(0.7, 0.7, 0.0), 0.8, 0.2),
+    biome_prototype(rgb(0.7, 0.7, 0.3), 1.2, 0.1),
+};
+
+
+enum water_factor {
+    WF_NONE,
+    WF_SMALL,
+    WF_BIG,
+    WF_SEA,
 };
 
 struct world;
@@ -53,14 +85,14 @@ struct world {
     vla<road_segment> roads = vla<road_segment>();
     vla<float> rivers = vla<float>();
 
-    // edge* get_downstream_edge(edge*)
-    // just call height fn at each edge and see what lower
-
-    //  maybe<int,int> get_down_
-
-    biome get_biome(point p, uint32_t seed);
+    // scalars
     float height(point p);
     float rainfall(point p);
+    float defensive_power(int face_idx, int edge_idx);
+    float income(int face_idx);
+    water_factor get_water_factor(int face_idx);
+    biome get_biome(point p);
+    
     void make_rivers();
 
     uint32_t seed;
@@ -73,3 +105,5 @@ struct world {
     float capture_price(int idx);
     int get_lowest_edge(int vert_idx);
 };
+
+const static int faction_gaia = 99999989;

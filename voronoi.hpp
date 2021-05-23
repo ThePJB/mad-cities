@@ -199,4 +199,17 @@ struct voronoi {
             rc->draw_triangle(colour, p1, p2, p3);
         }
     }
+
+    // -1 if not
+    int face_shared_edge(int face1, int face2) {
+        const auto f1 = faces.get(face1);
+        for (int i = 0; i < f1->edges.length; i++) {
+            const auto edge_idx = *f1->edges.get(i);
+            const auto e = edges.get(edge_idx);
+            if (e->face_idx.contains(face2)) {
+                return edge_idx;
+            }
+        }
+        return -1;
+    }
 };
