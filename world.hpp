@@ -49,12 +49,12 @@ struct biome_prototype {
 };
 
 const static biome_prototype biome_prototypes[NUM_BIOMES] = {
-    biome_prototype(rgb(0, 0, 1), 999, 0),
-    biome_prototype(rgb(0.2, 0.8, 0), 0.4, 0.5),
-    biome_prototype(rgb(0.1, 0.6, 0.1), 1.0, 0.35),
+    biome_prototype(rgb(0.1, 0.4, 0.7), 999, 0),
+    biome_prototype(rgb(0.3, 0.7, 0.3), 0.4, 0.5),
+    biome_prototype(rgb(0.3, 0.5, 0.3), 1.0, 0.35),
     biome_prototype(rgb(0.3, 0.3, 0.3), 999, 0),
-    biome_prototype(rgb(0.7, 0.7, 0.0), 0.8, 0.2),
-    biome_prototype(rgb(0.7, 0.7, 0.3), 1.2, 0.1),
+    biome_prototype(rgb(0.8, 0.8, 0.4), 0.8, 0.2),
+    biome_prototype(rgb(0.4, 0.4, 0.4), 1.2, 0.1),
 };
 
 
@@ -78,7 +78,6 @@ struct region {
 
 struct world {
     voronoi v;
-    //vla<faction> factions = vla<faction>();
     dict<faction> factions = dict<faction>();
     
     vla<region> regions = vla<region>();
@@ -88,6 +87,7 @@ struct world {
     // scalars
     float height(point p);
     float rainfall(point p);
+    float defensive_power_base(int face_idx);
     float defensive_power(int face_idx, int edge_idx);
     float income(int face_idx);
     water_factor get_water_factor(int face_idx);

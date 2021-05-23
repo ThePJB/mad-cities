@@ -31,23 +31,24 @@ float world::rainfall(point p) {
 }
 
 water_factor riverness_to_wf(float riverness) {
-    return riverness > 3.0 ? WF_BIG :
-        riverness > 1.0 ? WF_SMALL :
+    return riverness > 2.0 ? WF_BIG :
+        riverness > 0.5 ? WF_SMALL :
         WF_NONE;
+}
+
+float world::defensive_power_base(int face_idx) {
+    const auto p = v.faces.get(face_idx)->site;
+    const auto biome = regions.get(face_idx)->m_biome;
+    const auto biome_factor = biome_prototypes[biome].defence;
+
+    return biome_factor;
 }
 
 float world::defensive_power(int face_idx, int edge_idx) {
     const auto p = v.faces.get(face_idx)->site;
     const auto intervening_riverness = riverness_to_wf(*rivers.get(edge_idx));
     const auto biome = regions.get(face_idx)->m_biome;
-    const auto biome_factor = 
-        biome == BIOME_BIG_MOUNTAIN ? 9999.0 :
-        biome == BIOME_MOUNTAIN ? 1.0 :
-        biome == BIOME_PLATEAU ? 1.2 :
-        biome == BIOME_DESERT ? 0.8 :
-        biome == BIOME_PLAINS ? 0.4 :
-        biome == BIOME_OCEAN ? 9999.0 :
-        0.0;
+    const auto biome_factor = biome_prototypes[biome].defence;
 
     const auto river_factor =
         intervening_riverness == WF_BIG ? 1.0 :
@@ -74,7 +75,7 @@ float world::defensive_power(int face_idx, int edge_idx) {
 
     const auto isolation_factor = isolated ? 0.3 : 1.0;
 
-    return isolation_factor * 20 * (biome_factor + river_factor); //+ isolatedness + riverness
+    return isolation_factor * 20 * (defensive_power_base(face_idx) + river_factor); //+ isolatedness + riverness
 }
 
 water_factor world::get_water_factor(int face_idx) {
@@ -100,21 +101,14 @@ water_factor world::get_water_factor(int face_idx) {
 
 float world::income(int face_idx) {
     const auto biome = regions.get(face_idx)->m_biome;
-    const auto biome_factor = 
-        biome == BIOME_BIG_MOUNTAIN ? 0 :
-        biome == BIOME_MOUNTAIN ? 0.35 :
-        biome == BIOME_DESERT ? 0.2 :
-        biome == BIOME_PLAINS ? 0.5 :
-        biome == BIOME_PLATEAU ? 0.1 :
-        biome == BIOME_OCEAN ? 0 :
-        0.0;
+    const auto biome_factor = biome_prototypes[biome].income;
 
     const auto water = get_water_factor(face_idx);
     const auto water_factor =
         water == WF_NONE ? 0 :
         water == WF_SMALL ? 0.2 :
-        water == WF_BIG ? 0.4 :
-        water == WF_SEA ? 0.6 :
+        water == WF_BIG ? 0.35 :
+        water == WF_SEA ? 0.5 :
         0.0;
 
     return biome_factor + water_factor;

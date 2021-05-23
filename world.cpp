@@ -256,6 +256,9 @@ enum overlay_type {
     OL_HEIGHT,
     OL_EDGE_DOWNHILL,
     OL_RAINFALL,
+    OL_BIOMES,
+    OL_DEFENCE,
+    OL_FACTIONS,
 };
 
 void world::draw(render_context *rc, uint32_t highlight_faction) {
@@ -267,10 +270,15 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
         overlay = OL_HEIGHT;
     } else if (keys[SDL_SCANCODE_E]) {
         overlay = OL_EDGE_DOWNHILL;
-    } else if (keys[SDL_SCANCODE_F]) {
+    } else if (keys[SDL_SCANCODE_L]) {
         overlay = OL_RAINFALL;
+    } else if (keys[SDL_SCANCODE_B]) {
+        overlay = OL_BIOMES;
+    } else if (keys[SDL_SCANCODE_F]) {
+        overlay = OL_FACTIONS;
+    } else if (keys[SDL_SCANCODE_D]) {
+        overlay = OL_DEFENCE;
     }
-
 
     for (int i = 0; i < v.faces.length; i++) {
         auto f = &v.faces.items[i];
@@ -281,50 +289,55 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
             f_ptr = factions.get(faction_key);
         };
 
-        rgb colour = {1, 1, 1}; 
-        if (regions.items[i].m_biome == BIOME_PLAINS) {
-            colour = f_ptr ? hsv2rgb(f_ptr->colour) : rgb(0.3, 0.7, 0.3);
-        } else if (regions.items[i].m_biome == BIOME_MOUNTAIN) {
-            if (faction_key == faction_gaia) {
-                colour = {0.3, 0.5, 0.3};
-            } else {
-                auto mut_hsv = f_ptr->colour; 
-                mut_hsv.s *= 0.6;
-                colour = hsv2rgb(mut_hsv);
+        // Draw faces
+        const auto face_colour = [&](){
+            const auto biome_colour = biome_prototypes[regions.get(i)->m_biome].colour;
+            if (overlay == OL_BIOMES ) {
+                return biome_colour;
             }
-        } else if (regions.items[i].m_biome == BIOME_OCEAN) {
-            colour = {0.1, 0.4, 0.7};
-        } else if (regions.items[i].m_biome == BIOME_BIG_MOUNTAIN) {
-            colour = {0.4, 0.4, 0.4};
-        } else {
-            colour = {1, 0, 1};
-        }
+            
+            if (overlay == OL_INCOME) {
+                const auto money_rate = income(i);
+                return rgb(1-money_rate, money_rate, 0.0f);
+            }
 
-        if (overlay == OL_INCOME && regions.items[i].m_biome != BIOME_OCEAN && regions.items[i].m_biome != BIOME_BIG_MOUNTAIN) {
-            const auto money_rate = income(i);
-            colour = {1-money_rate, money_rate, 0.0f};
-        }
+            if (overlay == OL_HEIGHT) {
+                const auto h = height(this->v.faces.get(i)->site);
+                return rgb(h,h,h);
+            }
 
-        if (overlay == OL_HEIGHT) {
-            const auto h = height(this->v.faces.get(i)->site);
-            colour = {h, h, h};
-        }
+            if (overlay == OL_RAINFALL) {
+                const auto r = 5*rainfall(v.faces.get(i)->site);
+                return rgb(cm_lerp(1, 0, r), cm_lerp(1, 0, r), cm_lerp(0, 1, r));
+            }
 
-        if (overlay == OL_RAINFALL) {
-            const auto r = 5*rainfall(v.faces.get(i)->site);
-            colour = {cm_lerp(1, 0, r), cm_lerp(1, 0, r), cm_lerp(0, 1, r)};
-        }
+            if (overlay == OL_DEFENCE) {
+                const auto d = defensive_power_base(i);
+                // 0 .. 1.2 clamp
+                auto t = d / 1.2;
+                if (t > 1) t = 1;
 
-        v.fill_face(rc, i, rgb2hsv(colour));
-/*
-        for (int j = 0; j < f->edges.length; j++) {
-            auto e = v.edges.get(*f->edges.get(j));
-            const auto p1 = f->site;
-            const auto p2 = v.verts.get( e->vert_idx.contents[0] )->site;
-            const auto p3 = v.verts.get( e->vert_idx.contents[1] )->site;
-            rc->draw_triangle(colour, p1, p2, p3);
-        }
-        */
+                return rgb(1-t, 0, t);
+            }
+
+            if (faction_key == faction_gaia) {
+                return biome_colour;
+            }
+
+            const auto faction_colour = hsv2rgb(f_ptr->colour);
+            if (overlay == OL_FACTIONS) {
+                return faction_colour;
+            }
+
+            const auto blend_t = 0.7;
+            return rgb(
+                cm_lerp(biome_colour.r, faction_colour.r, blend_t),
+                cm_lerp(biome_colour.g, faction_colour.g, blend_t),
+                cm_lerp(biome_colour.b, faction_colour.b, blend_t)
+            );
+        }();
+
+        v.fill_face(rc, i, rgb2hsv(face_colour));
     }
     // draw roads
     for (int i = 0; i < roads.length; i++) {
