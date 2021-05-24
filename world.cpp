@@ -2,8 +2,7 @@
 #include "coolmath.hpp"
 #include <string.h>
 
-
-const auto upkeep_coefficient = 1.5;
+const auto upkeep_coefficient = 2.5;
 
 #define len(X) (sizeof(X)/sizeof(X[0]))
 
@@ -114,21 +113,6 @@ int world::get_lowest_edge(int vert_idx) {
 }
 
 void world::make_rivers() {
-    /*
-    OK so here's how we're going to do rivers.
-    The data structure is a vla of segments. Segments will be hash of start point + hash of end point, so like a commutative double dict.
-    There will be upper and lower segment based on sampling heightmap. water flows downhill.
-
-    will we sample each vertex or each edge. maybe vertices better. rivers shouldnt fork right?
-    not sure how to sample the vertices though lol.
-
-    so for each vertex, calculate rainfall, follow it downhill, adding rainfall to each visited edge. Keep going til it reaches the sea,
-    or until there's a local minima. If local minima, maybe contribute a standing water value that can be used to make a lake or something
-    at which point maybe you would rerun the algorithm to exit the lake
-
-    then to draw the river its just look up the thickness of each segment
-    */
-
     for (int i = 0; i < v.verts.length; i++) {
         auto current_vertex_idx = i;
         while (true) {
@@ -223,33 +207,7 @@ void world::destroy() {
     roads.destroy();
     v.destroy();
 }
-/*
-float world::capture_price(int idx) {
-    const auto region = regions.get(idx);
-    auto price = 10;
-    if (region->m_biome == BIOME_MOUNTAIN) {
-        price = 30;
-    }
-    if (region->faction_key == faction_gaia) {
-        price *= 0.5;
-    }
 
-    // check connection to neighbours
-    bool any_allies = false;
-    for (int i = 0; i < v.num_face_neighbours(idx); i++) {
-        const auto neighbour = v.get_face_neighbour(idx, i);
-        if (regions.get(neighbour)->faction_key == region->faction_key) {
-            any_allies = true;
-        }
-    }
-
-    if (!any_allies) {
-        price *= 0.1;
-    }
-
-    return price;
-}
-*/
 enum overlay_type {
     OL_NONE,
     OL_INCOME,
@@ -401,6 +359,15 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
 }
 
 void world::update(double dt) {
+    time += dt;
+
+    // zero faction income/upkeep
+    factions.iter_begin();
+    while (auto f = factions.iter_next()) {
+        f->item.prev_income = 0;
+        f->item.prev_upkeep = 0;
+    }
+
     for (int i = 0; i < v.faces.length; i++) {
         auto f = &v.faces.items[i];
         const auto faction_key = regions.items[i].faction_key;
@@ -409,11 +376,13 @@ void world::update(double dt) {
 
         // first make money
         auto money_rate = income(i);
+        faction_ptr->prev_income += money_rate;
         faction_ptr->money += money_rate*dt;
         const auto capital_site = &v.faces.items[faction_ptr->capital];
         const auto capital_point = capital_site->site;
         const auto upkeep = upkeep_coefficient * f->site.dist(capital_point);
         faction_ptr->money -= upkeep*dt;
+        faction_ptr->prev_upkeep += upkeep;
     
         // pick a random neighbour
         rng = hash(rng);

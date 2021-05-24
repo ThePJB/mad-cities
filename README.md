@@ -1,7 +1,7 @@
 # Mad Cities
-- press r to start again
-- hold i to see per-region income
+- press r to generate a new world
 - hold lshift for time warp
+- overlays - hold f, h, e, l, b, d
 
 ## Aims
  - be as simple as possible
@@ -182,3 +182,9 @@ todos:
  - biome overlay
  - incomes probs wrong lmao
  - defence overlay
+
+--------
+
+could have mineral patches that are worth income too
+
+defensive strat: just sit and rebuy

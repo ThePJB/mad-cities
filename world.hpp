@@ -12,6 +12,8 @@ struct faction {
     vla<int> owned_regions = vla<int>();
     int capital;
     char *name;
+    float prev_income = 0;
+    float prev_upkeep = 0;
 
     faction(){};
     faction(uint32_t seed, int capital_idx);
@@ -83,6 +85,8 @@ struct world {
     vla<region> regions = vla<region>();
     vla<road_segment> roads = vla<road_segment>();
     vla<float> rivers = vla<float>();
+
+    float time = 0;
 
     // scalars
     float height(point p);

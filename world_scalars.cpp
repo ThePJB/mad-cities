@@ -22,12 +22,12 @@ float world::height(point p) {
     );
     return 1.0 * hash_noise2(3 * new_point, 98944 + seed);
     */
-    return 1.0 * hash_noise2(3 * p, 98944 + seed);
+    return 1.0 * hash_noise2(4 * p, 98944 + seed);
     //return 1.0 * hash_fbm2_4(3 * p, 98944 + seed);
 }
 
 float world::rainfall(point p) {
-    return 0.2 * hash_noise2(3 * p, 44548328 + seed);
+    return 0.2 * hash_noise2(4 * p, 44548328 + seed);
 }
 
 water_factor riverness_to_wf(float riverness) {
@@ -75,7 +75,7 @@ float world::defensive_power(int face_idx, int edge_idx) {
 
     const auto isolation_factor = isolated ? 0.3 : 1.0;
 
-    return isolation_factor * 20 * (defensive_power_base(face_idx) + river_factor); //+ isolatedness + riverness
+    return isolation_factor * 2.5 * (defensive_power_base(face_idx) + river_factor); //+ isolatedness + riverness
 }
 
 water_factor world::get_water_factor(int face_idx) {
