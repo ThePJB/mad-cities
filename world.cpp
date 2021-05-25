@@ -1,5 +1,6 @@
 #include "world.hpp"
 #include "coolmath.hpp"
+#include "historical_figure.hpp"
 #include <string.h>
 
 const auto upkeep_coefficient = 2.5;
@@ -160,6 +161,7 @@ void world::make_rivers() {
 }
 
 world::world(uint32_t seed, int n_points, float p_faction) {
+    hf_titles_init();
     this->seed = seed;
     this->rng = hash(seed + 324897);
     auto points = vla<point>();

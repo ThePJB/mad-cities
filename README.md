@@ -14,42 +14,20 @@
  - while down, + rf
  - if local minima, make a lake. isoline?
 
-
-## Rivers
- - pick a bunch of random high points and make them just go downhill
- - or do it for every point lol
- - so just have array for riverness
- - if local minima, lake
-
 ## Todos
- - have like archaeology, stuff from the 6 people that inhabited it
- - also $current_year
- - show faction incomes
- - distinct faction colours: maybe rotating by phi or something?
- - add biome view as well
- - cut off penalty? ---- definitely
-  - if no neighbours price very cheap
+ - have like archaeology, remnants from the different factions that have controlled the city
+ - distinct faction colours: maybe rotating by phi or something? doesnt seem to be perfect
+ - expand cut off penalty to be if you cant path back to main
  - attacking bonus if you have more neighbours than them? maybe
- - name cities
- - notable cities - draw non capital cities too
+ - maybe like faction inspector, city inspector, region inspector
+ - 3d? maybe but dont get sidetracked lmao
+ - name / grow cities? city simulation? development simulation - roads etc, how
+ - instability consequences
+  - move capital
+  - assassinate leader
+  - overthrow faction
+  - breakaway faction - derived name (independent new thing of same last thing) (faction names, use index plz)
 
-## Done
- - try different income distributions
- - time warp
- - make deterministic, remove dt or dt = 1/60 and also 60fps lock, time warp is 4 updates per frame
- - maybe have n_factions != n_cells
-   - could have wild lands actually would be pretty cool
- - faction names
-
- ## Maybe todos
- - maybe increase the cost of taking over further away instead of or as well as the upkeep thing
- - maybe simulate population, output?
- - rivers, proper elevation, proper graphics could all be cool
- - make roads go through center of shared edge
-  - make roads do something, destroyed between rivals, not just a fully connected mesh etc
-  - try adding reasons to develop
-  - moving of capitals
-    - historical figure might move it
   - alliances
     - historical figures might forge them
   - weaken regions when they get captured
@@ -57,12 +35,11 @@
   - differentiate factions - defensiveness, aggression, propensity to invest in different infrastructure, etc
     - a historical figure might change factions numbers
    - less noisy, more interesting: maybe chain reactions and stuff
-   - rivers
-   - make 3d
-    - roads would have to be isolines
-   - could do domain warping
-   - economy
- - battle simulation
+
+  - world gen?
+   - need to solve local minimas first
+   - then could go domain warping etc
+
  - seafaring
  - notable leaders
   - statesman
@@ -201,3 +178,8 @@ how to calculate split points
 now just make leader stats factor in
 todo make title line up with what they are
 and maybe display leader number title
+
+------
+mega instability when money is negative or whatever
+assassinating the leader, faction overthrow, breakaways from certain towns
+death reasons

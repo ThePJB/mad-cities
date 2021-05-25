@@ -21,3 +21,5 @@ struct historical_figure {
 
     void print_name() const;
 };
+
+void hf_titles_init();

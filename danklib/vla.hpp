@@ -25,6 +25,13 @@ struct vla {
         length = 0;
     }
 
+    // 0 initializes
+    vla(int backing_size) {
+        items = (T *)malloc(sizeof(T) * backing_size);
+        backing_size = backing_size;
+        length = backing_size;
+    }
+
     vla(T *i_items, int i_backing_size, int i_length) {
         items = i_items;
         length = i_length;
@@ -46,7 +53,7 @@ struct vla {
         }
     }
 
-    void push(T item) {
+    void push(const T item) {
         if (length == backing_size - 1) {
             backing_size *= 2;
             items = (T *)realloc(items, backing_size * sizeof(T));
