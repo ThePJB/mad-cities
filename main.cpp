@@ -17,6 +17,9 @@
 #include "point.hpp"
 #include "world.hpp"
 #include "fatal.hpp"
+
+#include "historical_figure.hpp"
+
 #define len(X) (sizeof(X)/sizeof(X[0]))
 
 uint32_t rollover_faction = 0;
@@ -128,11 +131,14 @@ int main(int argc, char** argv) {
                 return f1.n_territories > f2.n_territories;
             });
             for (int i = 0; i < faction_info_list.length; i++) {
-                printf("\t[%d] [%2.2f/y] - %s\n", 
+                printf("\t[%d] [%2.2f/y] - %s - ", 
                     faction_info_list.get(i)->n_territories,
                     faction_info_list.get(i)->net_income, 
                     w.factions.get(faction_info_list.get(i)->key)->name
                 );
+                const auto leader = w.factions.get(faction_info_list.get(i)->key)->leader;
+                leader.print_name();
+                printf(" [%d]\n", leader.personality);
             }
             faction_info_list.destroy();
         }

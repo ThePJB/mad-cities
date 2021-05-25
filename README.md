@@ -188,3 +188,16 @@ todos:
 could have mineral patches that are worth income too
 
 defensive strat: just sit and rebuy
+
+
+--------------
+
+how to optimize the colours lol
+add historical figures
+have them get assassinated, have succession crisis and splits and stuff
+how to calculate split points
+
+-----------------
+now just make leader stats factor in
+todo make title line up with what they are
+and maybe display leader number title

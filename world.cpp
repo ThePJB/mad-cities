@@ -81,6 +81,8 @@ faction::faction(uint32_t seed, int capital_idx) {
     name = (char*)calloc(2 + strlen(first_name[first]) + strlen(second_name[second]), sizeof(char));
     sprintf(name, "%s %s", first_name[first], second_name[second]);
 
+    leader = historical_figure(seed + n_faction + 435324);
+
     n_faction++;
 }
 
@@ -360,10 +362,35 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
 
 void world::update(double dt) {
     time += dt;
+    
 
     // zero faction income/upkeep
     factions.iter_begin();
     while (auto f = factions.iter_next()) {
+        if (f->item.owned_regions.length == 0) {
+            continue;
+        }
+        // leader death?
+        rng = hash(rng);
+        if (hash_floatn(rng, 0, 1) < 0.0001) {
+            // leader dies
+            f->item.leader.print_name();
+            printf(" of %s ", f->item.name);
+            printf(" has died");
+            if (hash_floatn(rng + 12324, 0, 1) < 0.1) {
+                // succession crisis
+                printf(", leaving no heir. He is succeeded by ");
+                f->item.leader = historical_figure(rng + 45334);
+                f->item.leader.print_name();
+            } else {
+                // succession ok
+                printf(". He is succeeded by his son ");
+                f->item.leader = historical_figure(rng + 45334, f->item.leader);
+                f->item.leader.print_name();
+            }
+            printf(". Long may he reign!\n");
+        }
+
         f->item.prev_income = 0;
         f->item.prev_upkeep = 0;
     }
@@ -381,8 +408,14 @@ void world::update(double dt) {
         const auto capital_site = &v.faces.items[faction_ptr->capital];
         const auto capital_point = capital_site->site;
         const auto upkeep = upkeep_coefficient * f->site.dist(capital_point);
-        faction_ptr->money -= upkeep*dt;
-        faction_ptr->prev_upkeep += upkeep;
+        
+        const auto upkeep_multi = 
+            faction_ptr->leader.personality == P_GOOD_ADMINISTRATOR ? 0.5 :
+            faction_ptr->leader.personality == P_BAD_ADMINISTRATOR ? 2.0 :
+            1.0;
+
+        faction_ptr->money -= upkeep_multi*upkeep*dt;
+        faction_ptr->prev_upkeep += upkeep_multi*upkeep;
     
         // pick a random neighbour
         rng = hash(rng);
@@ -399,7 +432,13 @@ void world::update(double dt) {
             // price = ?? maybe amount of money
             //const auto price = 2 + factions.items[other_faction].money;
             const auto shared_edge_idx = v.face_shared_edge(i, neighbour_idx); // hopefully not -1
-            const auto price = defensive_power(neighbour_idx, shared_edge_idx);
+
+            const auto price_multi =
+                faction_ptr->leader.personality == P_GOOD_GENERAL ? 0.5 :
+                faction_ptr->leader.personality == P_BAD_GENERAL ? 2.0 :
+                1.0;
+
+            const auto price = price_multi * defensive_power(neighbour_idx, shared_edge_idx);
             rng = hash(rng);
             if ((hash_floatn(rng, 0, 1) < 0.01) && price < faction_ptr->money) {
                 //printf("faction %d buying region %d from %d\n", faction_key, neighbour_idx, other_faction);
