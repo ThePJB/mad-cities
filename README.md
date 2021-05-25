@@ -183,3 +183,5 @@ and maybe display leader number title
 mega instability when money is negative or whatever
 assassinating the leader, faction overthrow, breakaways from certain towns
 death reasons
+
+shitness of the noise is pretty obvious. maybe rotate or do some perlin or something

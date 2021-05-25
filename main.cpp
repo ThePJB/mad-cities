@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
                 );
                 const auto leader = w.factions.get(faction_info_list.get(i)->key)->leader;
                 leader.print_name();
-                printf(" [%d]\n", leader.personality);
+                printf("\n");
             }
             faction_info_list.destroy();
         }

@@ -22,12 +22,13 @@ const char *hf_first_name[] = {
     "Justinian",
     "Kieren",
     "Henry",
+    "Cain",
+    "Abel",
 };
 
 auto hf_titles = vla<vla<const char*>>(NUM_PERSONALITIES);
 void hf_titles_init() {
     auto bad_general_titles = vla<const char*>();
-    bad_general_titles.push("Weak");
     bad_general_titles.push("Feeble");
     bad_general_titles.push("Unlucky");
     bad_general_titles.push("Cowardly");
@@ -44,9 +45,8 @@ void hf_titles_init() {
     good_general_titles.push("Fierce");
 
     auto bad_administrator_titles = vla<const char*>();
-    bad_administrator_titles.push("Stupid");
-    bad_administrator_titles.push("Idiot");
-    bad_administrator_titles.push("Cretin");
+    bad_administrator_titles.push("Brash");
+    bad_administrator_titles.push("Slow");
     bad_administrator_titles.push("Ignoramus");
     bad_administrator_titles.push("Unintelligent");
     bad_administrator_titles.push("Foolhardy");
