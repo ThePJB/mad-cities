@@ -117,6 +117,45 @@ int main(int argc, char** argv) {
             w.update(dt);
         }
 
+        if (keystate[SDL_SCANCODE_RSHIFT]) {
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+            w.update(dt);
+        }
+
         const auto current_year = floorf(w.time);
         if (current_year != prev_year) {
             auto faction_info_list = vla<faction_info>();
@@ -131,9 +170,10 @@ int main(int argc, char** argv) {
                 return f1.n_territories > f2.n_territories;
             });
             for (int i = 0; i < faction_info_list.length; i++) {
-                printf("\t[%d] [%2.2f/y] - %s - ", 
+                printf("\t[%d] [%2.2f/y] [%.3f] - %s - ", 
                     faction_info_list.get(i)->n_territories,
                     faction_info_list.get(i)->net_income, 
+                    w.factions.get(faction_info_list.get(i)->key)->instability,
                     w.factions.get(faction_info_list.get(i)->key)->name
                 );
                 const auto leader = w.factions.get(faction_info_list.get(i)->key)->leader;

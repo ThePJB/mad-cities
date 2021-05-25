@@ -42,10 +42,12 @@ const char *name_first_part[] = {
     "Great",
     "Hit",
     "Hard",
+    "Turn",
 };
 
 const char *name_second_part[] = {
     "blade",
+    "bite",
     "bat",
     "bush",
     "dog",
@@ -88,6 +90,7 @@ const char *name_second_part[] = {
     "soul",
     "key",
     "lock",
+    "house",
 };
 
 const char *state_type[] = {
@@ -101,8 +104,7 @@ faction::faction(uint32_t seed, int capital_idx) {
     static int n_faction = 0;
 
     capital = capital_idx;
-    id = hash(capital_idx);
-    owned_regions.push(capital_idx);
+    id = hash(seed + capital_idx);
     
     const auto start_angle = hash_floatn(seed + 32445324, 0, 360);
     n_faction++;

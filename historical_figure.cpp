@@ -34,6 +34,7 @@ void hf_titles_init() {
     bad_general_titles.push("Cowardly");
     bad_general_titles.push("Impotent");
     bad_general_titles.push("Meek");
+    bad_general_titles.push("Unremarkable");
     
     auto good_general_titles = vla<const char*>();
     good_general_titles.push("Conqueror");

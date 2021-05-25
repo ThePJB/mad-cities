@@ -16,6 +16,33 @@ float road_cost(point p1, point p2) {
     return 15*p1.dist(p2);
 }
 
+const char *world::faction_name(uint32_t faction_id) {
+    if (faction_id == faction_gaia) {
+        return "gaia";
+    }
+    if (!factions.contains(faction_id)) {
+        printf("warning: unknown faction name for key %u\n", faction_id);
+        return "UNKNOWN_FACTION";
+    }
+    return factions.get(faction_id)->name;
+    
+}
+
+void world::change_region_owner(int region_idx, uint32_t new_owner) {
+    if (region_idx < 0 || region_idx >= regions.length) {
+        printf("bad change region owner region idx %d length %d\n", region_idx, regions.length);
+        exit(1);
+    }
+    const auto old_owner = regions.get(region_idx)->faction_key;
+
+    regions.get(region_idx)->faction_key = new_owner;
+
+    factions.get(new_owner)->owned_regions.push(region_idx);
+
+    if (old_owner == faction_gaia) return;
+    factions.get(old_owner)->owned_regions.remove_item(region_idx);
+}
+
 int world::get_lowest_edge(int vert_idx) {
     int lowest_idx = -1;
     float lowest = 99999.0;
@@ -92,29 +119,38 @@ world::world(uint32_t seed, int n_points, float p_faction) {
     }
     v = voronoi(points);
 
-    // populate region vla
+    // set up regions
     for (int i = 0; i < v.faces.length; i++) {
         auto f = &v.faces.items[i];
 
         auto new_region = region(i, faction_gaia, f->site, this);
-        if (new_region.m_biome != BIOME_OCEAN && 
-                new_region.m_biome != BIOME_BIG_MOUNTAIN &&
-                hash_floatn(seed + 324234 + i, 0, 1) < 0.1) {
-            auto new_faction = faction(seed, i);
-            new_region.faction_key = new_faction.id;
-            printf("creating %s\n", new_faction.name);
-            factions.set(new_faction.id, new_faction);
-        }
         regions.push(new_region);
     }
 
+    // set up factions
+    for (int i = 0; i < v.faces.length; i++) {
+        auto r = regions.get(i);
+        if (r->m_biome == BIOME_OCEAN ||
+            r->m_biome == BIOME_BIG_MOUNTAIN ||
+            hash_floatn(seed + 32434 + i, 0, 1) > 0.1) {
+            continue;
+        }
+
+        // create a new faction here
+        auto new_faction = faction(seed, i);
+        factions.set(new_faction.id, new_faction);
+        printf("creating %s\n", new_faction.name);
+        r->city = true;
+        change_region_owner(i, new_faction.id);
+    }
+
+    // set up rivers
     for (int i = 0; i < v.edges.length; i++) {
         rivers.push(0.0f);
     }
+    make_rivers();
 
     points.destroy();
-
-    make_rivers();
 }
 
 void world::destroy() {
@@ -280,9 +316,138 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
     }
 }
 
+// handles instability
+// handles income
+void world::update_faction(bucket<faction> *f, double dt) {
+    
+    // instability ticks down at 1.0 per year
+    f->item.instability -= 1.0 * dt;
+    if (f->item.instability < 0) {
+        f->item.instability = 0;
+    }
+
+    // Income and upkeep
+    auto this_cycle_income = 0.0;
+    auto this_cycle_upkeep = 0.0;
+
+    const auto leader = f->item.leader;
+    const auto upkeep_multi =
+            leader.personality == P_GOOD_ADMINISTRATOR ? 0.5 :
+            leader.personality == P_BAD_ADMINISTRATOR ? 2.0 :
+            1.0;
+
+    for (int i = 0; i < f->item.owned_regions.length; i++) {
+        const auto region_idx = f->item.owned_regions.items[i];
+        this_cycle_income += income(region_idx);
+
+        const auto capital_point = v.faces.items[f->item.capital].site;
+        this_cycle_upkeep += upkeep_multi * upkeep_coefficient * v.faces.get(region_idx)->site.dist(capital_point);
+    }
+
+    f->item.prev_income = this_cycle_income;
+    f->item.prev_upkeep = this_cycle_upkeep;
+
+    f->item.money += dt * this_cycle_income;
+    f->item.money -= dt * this_cycle_upkeep;
+
+    // if not enough money it gets put on the instability tab
+    if (f->item.money < 0) {
+        f->item.instability -= f->item.money;
+        f->item.money = 0;
+    }
+
+    rng = hash(rng);
+    // Natural leader death
+    if (hash_floatn(rng, 0, 1) < 0.0002) {
+        // leader dies
+        f->item.leader.print_name();
+        printf(" of %s ", f->item.name);
+        printf(" has died of natural causes");
+        if (hash_floatn(rng + 12324, 0, 1) < 0.1) {
+            // succession crisis
+            printf(", leaving no heir. He is succeeded by ");
+            f->item.leader = historical_figure(rng + 45334);
+            f->item.leader.print_name();
+        } else {
+            // succession ok
+            printf(". He is succeeded by his son ");
+            f->item.leader = historical_figure(rng + 45334, f->item.leader);
+            f->item.leader.print_name();
+        }
+        printf(". Long may he reign!\n");
+        return;
+    }
+
+    // assassination due to instability
+    auto assassination_tendency = 0.0005 * f->item.instability;
+    if (assassination_tendency > 0.002) {
+        assassination_tendency = 0.002;
+    }
+
+    if (hash_floatn(rng + 574726, 0, 1) < assassination_tendency) {
+        // leader dies
+        f->item.leader.print_name();
+        printf(" of %s ", f->item.name);
+        printf(" has been assassinated");
+        if (hash_floatn(rng + 125324, 0, 1) < 0.1) {
+            // succession crisis
+            printf(", leaving no heir. He is succeeded by ");
+            f->item.leader = historical_figure(rng + 45334);
+            f->item.leader.print_name();
+        } else {
+            // succession ok
+            printf(". He is succeeded by his son ");
+            f->item.leader = historical_figure(rng + 45334, f->item.leader);
+            f->item.leader.print_name();
+        }
+        printf(". Long may he reign!\n");
+        return;
+
+    }
+
+    // city defection
+    if (f->item.instability > 10) {
+        for (int i = 0; i < f->item.owned_regions.length; i++) {
+            const auto region_idx = f->item.owned_regions.items[i];         // faction owned region contains something out of bounds?
+
+            fflush(stdout);
+            if (region_idx < 0 || region_idx >= regions.length) {
+                printf("bad region idx: %d for faction %s owned region %d (array length %d)\n", region_idx, f->item.name, i, f->item.owned_regions.length);
+                // does it work fine if i continue here?
+            }
+
+            if (regions.items[region_idx].city) {                           // segv here??? bad region idx?
+                if (hash_floatn(rng + 53452 + i*43325 + region_idx*342345, 0, 1) < f->item.instability * 0.00002) {
+                    // city defects
+                    auto new_faction = faction(rng+region_idx+seed+f->item.id, region_idx);
+                    
+                    // get money = to the instability for momentum
+                    new_faction.money = f->item.instability;
+                    factions.set(new_faction.id, new_faction);
+                    change_region_owner(region_idx, new_faction.id);
+
+                    // bonus points the name could be derived eg peoples or independent
+
+                    // always seems to be the capital, and always seems to desync as well
+                    // maybe give em a bit of money or something
+                    // probably handle faction transfers through world
+                    // or could have cells everywhere that turn and then get squashed or whatever
+
+
+                    printf("A city defected from %s due to instability, forming %s, lead by ", f->item.name, new_faction.name);
+                    new_faction.leader.print_name();
+                    printf("\n");
+                }
+            }
+        }
+    }
+}
+
+
+
+
 void world::update(double dt) {
     time += dt;
-    
 
     // zero faction income/upkeep
     factions.iter_begin();
@@ -290,29 +455,7 @@ void world::update(double dt) {
         if (f->item.owned_regions.length == 0) {
             continue;
         }
-        // leader death?
-        rng = hash(rng);
-        if (hash_floatn(rng, 0, 1) < 0.0001) {
-            // leader dies
-            f->item.leader.print_name();
-            printf(" of %s ", f->item.name);
-            printf(" has died");
-            if (hash_floatn(rng + 12324, 0, 1) < 0.1) {
-                // succession crisis
-                printf(", leaving no heir. He is succeeded by ");
-                f->item.leader = historical_figure(rng + 45334);
-                f->item.leader.print_name();
-            } else {
-                // succession ok
-                printf(". He is succeeded by his son ");
-                f->item.leader = historical_figure(rng + 45334, f->item.leader);
-                f->item.leader.print_name();
-            }
-            printf(". Long may he reign!\n");
-        }
-
-        f->item.prev_income = 0;
-        f->item.prev_upkeep = 0;
+        update_faction(f, dt);
     }
 
     for (int i = 0; i < v.faces.length; i++) {
@@ -321,22 +464,7 @@ void world::update(double dt) {
         if (faction_key == faction_gaia) continue;
         faction *faction_ptr = factions.get(faction_key);
 
-        // first make money
-        auto money_rate = income(i);
-        faction_ptr->prev_income += money_rate;
-        faction_ptr->money += money_rate*dt;
-        const auto capital_site = &v.faces.items[faction_ptr->capital];
-        const auto capital_point = capital_site->site;
-        const auto upkeep = upkeep_coefficient * f->site.dist(capital_point);
-        
-        const auto upkeep_multi = 
-            faction_ptr->leader.personality == P_GOOD_ADMINISTRATOR ? 0.5 :
-            faction_ptr->leader.personality == P_BAD_ADMINISTRATOR ? 2.0 :
-            1.0;
-
-        faction_ptr->money -= upkeep_multi*upkeep*dt;
-        faction_ptr->prev_upkeep += upkeep_multi*upkeep;
-    
+        // capturing
         // pick a random neighbour
         rng = hash(rng);
         const auto neighbour_rel_idx = hash_intn(rng, 0, v.num_face_neighbours(i));
@@ -361,17 +489,15 @@ void world::update(double dt) {
             const auto price = price_multi * defensive_power(neighbour_idx, shared_edge_idx);
             rng = hash(rng);
             if ((hash_floatn(rng, 0, 1) < 0.01) && price < faction_ptr->money) {
-                //printf("faction %d buying region %d from %d\n", faction_key, neighbour_idx, other_faction);
                 faction_ptr->money -= price;
-                regions.items[neighbour_idx].faction_key = faction_key;
+                change_region_owner(neighbour_idx, faction_key);
 
+                // report elimination
                 if (other_faction != faction_gaia) {
-                    factions.get(other_faction)->owned_regions.remove_item(neighbour_idx);
                     if (factions.get(other_faction)->owned_regions.length == 0) {
                         printf("faction %s eliminated by %s\n", factions.get(other_faction)->name, faction_ptr->name);
                     }
                 }
-                faction_ptr->owned_regions.push(neighbour_idx);
             }
         }
 

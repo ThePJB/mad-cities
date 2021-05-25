@@ -185,3 +185,37 @@ assassinating the leader, faction overthrow, breakaways from certain towns
 death reasons
 
 shitness of the noise is pretty obvious. maybe rotate or do some perlin or something
+
+-------------
+roadmap of revolutions
+
+refactor world faction update
+
+1. death of natural causes
+2. death due to assassination (scale off instability)
+3. instability comes when you have negative money
+4. instability decreases over time
+5. revolution due to instability
+    move capital
+6. breakaway states due to instability
+
+if we care about conserving dt, hmm how does probability work? 10 1 in 100s or 1 1 in 10 is better?
+
+
+--------------------------------------------------------------------
+adjust probabilities to reflect how good of an idea it is to capture
+
+vla, probably need to always use get and set and do bounds checking hey
+
+should probably get playback controls in here soon
+
+hmm last thing in the owned regions vla is invalid y
+
+
+owned_regions.push literally only in the one place
+could the length be wrong?
+could it be aliasing?
+
+it only seems to happen after a bunch of defections
+
+I wonder if it would be worth typing indexes

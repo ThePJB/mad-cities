@@ -9,6 +9,7 @@ struct faction {
     uint32_t id;
     hsv colour = hsv(0,0,0);
     float money = 0;
+    float instability = 0;
     vla<int> owned_regions = vla<int>();
     int capital;
     char *name;
@@ -18,4 +19,5 @@ struct faction {
 
     faction(){};
     faction(uint32_t seed, int capital_idx);
+    
 };

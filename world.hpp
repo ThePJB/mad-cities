@@ -61,6 +61,7 @@ struct region {
     int voronoi_idx;
     int faction_key;
     biome m_biome;
+    bool city = false;
 
     region(int idx, uint32_t faction, point p, world *w);
 };
@@ -87,14 +88,19 @@ struct world {
     
     void make_rivers();
 
+    void change_region_owner(int region_idx, uint32_t new_owner);
+    const char *faction_name(uint32_t faction_id);
+
     uint32_t seed;
     uint32_t rng = 23424;
+
+
     
     world(uint32_t seed, int n_points, float p_faction);
     void destroy();
     void draw(render_context *rc, uint32_t highlight_faction);
     void update(double dt);
-    float capture_price(int idx);
+    void update_faction(bucket<faction> *f, double dt);
     int get_lowest_edge(int vert_idx);
 };
 

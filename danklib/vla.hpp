@@ -152,10 +152,14 @@ struct vla {
         return &items[idx];
     }
 
+    // doesn't preserve order
     void remove_idx(int idx) {
+        items[idx] = items[length-1];
+        /* probably if it was the last thing or something
         for (int i = idx; i < length; i++) {
             items[i] = items[i+1];
         }
+        */
         length--;
     }
 
