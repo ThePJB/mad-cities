@@ -25,7 +25,7 @@
 uint32_t rollover_faction = 0;
 
 const auto num_points = 800;
-const auto p_faction = 0.05;
+const auto p_faction = 0.1;
 
 struct faction_info {
     uint32_t key;
@@ -77,6 +77,7 @@ int main(int argc, char** argv) {
                     if (w.factions.contains(rollover_faction)) {
                         const auto f = w.factions.get(rollover_faction);
                         printf("selected %s\n", f->name);
+                        printf("\tleader: "); f->leader.print_name(); printf("\n");
                         printf("\tmoney: %.3f\n", f->money);
                         printf("\tincome: %.3f\n", f->prev_income);
                         printf("\tupkeep: %.3f\n", f->prev_upkeep);
@@ -118,42 +119,9 @@ int main(int argc, char** argv) {
         }
 
         if (keystate[SDL_SCANCODE_RSHIFT]) {
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
-            w.update(dt);
+            for (int i = 0; i < 20; i++) {
+                w.update(dt);
+            }
         }
 
         const auto current_year = floorf(w.time);

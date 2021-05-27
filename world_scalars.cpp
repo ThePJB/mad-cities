@@ -12,6 +12,8 @@ Derived:
     - biome
 */
 
+const float world_scale = 1.0;
+
 float world::height(point p) {
         //return sqrtf(p.x*p.x + p.y*p.y);
     //return 1.0 * hash_noise2(3 * p, 98944 + seed);
@@ -22,12 +24,12 @@ float world::height(point p) {
     );
     return 1.0 * hash_noise2(3 * new_point, 98944 + seed);
     */
-    return 1.0 * hash_noise2(4 * p, 98944 + seed);
+    return 1.0 * hash_noise2(world_scale * 4 * p, 98944 + seed);
     //return 1.0 * hash_fbm2_4(3 * p, 98944 + seed);
 }
 
 float world::rainfall(point p) {
-    return 0.2 * hash_noise2(4 * p, 44548328 + seed);
+    return 0.2 * hash_noise2(world_scale * 4 * p, 44548328 + seed);
 }
 
 water_factor riverness_to_wf(float riverness) {
@@ -120,17 +122,21 @@ biome world::get_biome(point p) {
 
     if (h < 0.3) {
         return BIOME_OCEAN;
-    } else if (h < 0.5) {
+    }
+
+    if (h < 0.5) {
         if (r < 0.1) {
             return BIOME_DESERT;
         }
         return BIOME_PLAINS;
-    } else if (h < 0.7) {
+    }
+
+    if (h < 0.8) {
         if (r < 0.1) {
             return BIOME_PLATEAU;
         }
         return BIOME_MOUNTAIN;
-    } else {
-        return BIOME_BIG_MOUNTAIN;
     }
+        
+    return BIOME_BIG_MOUNTAIN;
 }

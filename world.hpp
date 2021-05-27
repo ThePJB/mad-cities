@@ -41,10 +41,10 @@ struct biome_prototype {
 const static biome_prototype biome_prototypes[NUM_BIOMES] = {
     biome_prototype(rgb(0.1, 0.4, 0.7), 999, 0),
     biome_prototype(rgb(0.3, 0.7, 0.3), 0.4, 0.5),
-    biome_prototype(rgb(0.3, 0.5, 0.3), 1.0, 0.35),
+    biome_prototype(rgb(0.3, 0.5, 0.3), 1.0, 0.4),
     biome_prototype(rgb(0.3, 0.3, 0.3), 999, 0),
-    biome_prototype(rgb(0.8, 0.8, 0.4), 0.8, 0.2),
-    biome_prototype(rgb(0.4, 0.4, 0.4), 1.2, 0.1),
+    biome_prototype(rgb(0.8, 0.8, 0.4), 0.8, 0.3),
+    biome_prototype(rgb(0.4, 0.4, 0.4), 1.2, 0.2),
 };
 
 

@@ -132,7 +132,7 @@ world::world(uint32_t seed, int n_points, float p_faction) {
         auto r = regions.get(i);
         if (r->m_biome == BIOME_OCEAN ||
             r->m_biome == BIOME_BIG_MOUNTAIN ||
-            hash_floatn(seed + 32434 + i, 0, 1) > 0.1) {
+            hash_floatn(seed + 32434 + i*345345, 0, 1) > p_faction) {
             continue;
         }
 
@@ -213,6 +213,8 @@ void world::draw(render_context *rc, uint32_t highlight_faction) {
             }
             
             if (overlay == OL_INCOME) {
+                if (regions.get(i)->m_biome == BIOME_BIG_MOUNTAIN) return biome_colour; 
+                if (regions.get(i)->m_biome == BIOME_OCEAN) return biome_colour; 
                 const auto money_rate = income(i);
                 return rgb(1-money_rate, money_rate, 0.0f);
             }
@@ -385,6 +387,7 @@ void world::update_faction(bucket<faction> *f, double dt) {
     }
 
     if (hash_floatn(rng + 574726, 0, 1) < assassination_tendency) {
+        rng = hash(rng);
         // leader dies
         f->item.leader.print_name();
         printf(" of %s ", f->item.name);
